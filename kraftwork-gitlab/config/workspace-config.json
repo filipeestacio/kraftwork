@@ -1,0 +1,14 @@
+{
+  "section": "glab",
+  "title": "GitLab Configuration",
+  "description": "GitLab-specific settings for merge request and CI workflows",
+  "fields": [
+    {
+      "key": "defaultGroup",
+      "type": "string",
+      "prompt": "What is your default GitLab group for API queries (e.g., listing all your MRs)?",
+      "example": "my-company",
+      "required": true
+    }
+  ]
+}
