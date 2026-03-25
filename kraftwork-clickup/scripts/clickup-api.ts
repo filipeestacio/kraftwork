@@ -138,7 +138,7 @@ export function getToken(config: ClickUpConfig): string {
 // ---------------------------------------------------------------------------
 
 const BASE_URL_V2 = "https://api.clickup.com/api/v2";
-const BASE_URL_V3 = "https://api.clickup.com/api/v3";
+export const BASE_URL_V3 = "https://api.clickup.com/api/v3";
 const MAX_RETRIES = 3;
 
 export async function request(
@@ -365,7 +365,9 @@ export async function main(): Promise<void> {
 // Entry point
 // ---------------------------------------------------------------------------
 
-main().catch((err: unknown) => {
-  output({ ok: false, error: String(err) });
-  process.exit(1);
-});
+if (import.meta.main) {
+  main().catch((err: unknown) => {
+    output({ ok: false, error: String(err) });
+    process.exit(1);
+  });
+}
