@@ -1,0 +1,21 @@
+{
+  "section": "jira",
+  "title": "Jira Configuration",
+  "description": "Jira project and instance settings for ticket management",
+  "fields": [
+    {
+      "key": "project",
+      "type": "string",
+      "prompt": "What is your default Jira project prefix?",
+      "example": "PROJ",
+      "required": true
+    },
+    {
+      "key": "cloudId",
+      "type": "string",
+      "prompt": "What is your Atlassian cloud domain?",
+      "example": "mycompany.atlassian.net",
+      "required": true
+    }
+  ]
+}
