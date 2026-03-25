@@ -337,7 +337,58 @@ type SubcommandHandler = (
 ) => Promise<Result>;
 
 const subcommands: Record<string, SubcommandHandler> = {
-  // Subcommands will be registered here in subsequent tasks.
+  // ---------------------------------------------------------------------------
+  // Workspace hierarchy subcommands
+  // ---------------------------------------------------------------------------
+
+  "list-spaces": async (_args, config) => {
+    const result = await request("GET", `/team/${config.teamId}/space?archived=false`);
+    if (!result.ok) return result;
+    const data = result.data as Record<string, unknown>;
+    return { ok: true, data: { spaces: data["spaces"] ?? [] } };
+  },
+
+  "list-folders": async (args, _config) => {
+    const spaceId = args.flags["space"];
+    if (!spaceId) return { ok: false, error: "Missing required flag: --space <id>" };
+    const result = await request("GET", `/space/${spaceId}/folder?archived=false`);
+    if (!result.ok) return result;
+    const data = result.data as Record<string, unknown>;
+    return { ok: true, data: { folders: data["folders"] ?? [] } };
+  },
+
+  "list-lists": async (args, _config) => {
+    const folderId = args.flags["folder"];
+    if (!folderId) return { ok: false, error: "Missing required flag: --folder <id>" };
+    const result = await request("GET", `/folder/${folderId}/list?archived=false`);
+    if (!result.ok) return result;
+    const data = result.data as Record<string, unknown>;
+    return { ok: true, data: { lists: data["lists"] ?? [] } };
+  },
+
+  "list-folderless-lists": async (args, _config) => {
+    const spaceId = args.flags["space"];
+    if (!spaceId) return { ok: false, error: "Missing required flag: --space <id>" };
+    const result = await request("GET", `/space/${spaceId}/list?archived=false`);
+    if (!result.ok) return result;
+    const data = result.data as Record<string, unknown>;
+    return { ok: true, data: { lists: data["lists"] ?? [] } };
+  },
+
+  "list-statuses": async (args, _config) => {
+    const listId = args.flags["list"];
+    if (!listId) return { ok: false, error: "Missing required flag: --list <id>" };
+    const result = await request("GET", `/list/${listId}`);
+    if (!result.ok) return result;
+    const data = result.data as Record<string, unknown>;
+    const rawStatuses = (data["statuses"] as Array<Record<string, unknown>> | undefined) ?? [];
+    const statuses = rawStatuses.map((s) => ({
+      status: s["status"],
+      type: s["type"],
+      color: s["color"],
+    }));
+    return { ok: true, data: { statuses } };
+  },
 };
 
 export async function main(): Promise<void> {
