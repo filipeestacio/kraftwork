@@ -1,0 +1,40 @@
+{
+  "section": "clickup",
+  "title": "ClickUp Configuration",
+  "description": "ClickUp workspace, spaces, and list settings for task management",
+  "fields": [
+    {
+      "key": "teamId",
+      "type": "string",
+      "prompt": "What is your ClickUp workspace/team ID?",
+      "example": "9012143904",
+      "required": true
+    },
+    {
+      "key": "token_env",
+      "type": "string",
+      "prompt": "Environment variable name for your ClickUp API token",
+      "default": "CLICKUP_TOKEN",
+      "required": false
+    },
+    {
+      "key": "defaultList",
+      "type": "string",
+      "prompt": "Default list ID for task creation",
+      "example": "901216485743",
+      "required": true
+    },
+    {
+      "key": "chatChannelId",
+      "type": "string",
+      "prompt": "Chat channel ID for team notifications (leave blank to skip)",
+      "required": false
+    },
+    {
+      "key": "spaces",
+      "type": "object",
+      "prompt": "Run /clickup-sync to populate spaces and lists",
+      "required": false
+    }
+  ]
+}
