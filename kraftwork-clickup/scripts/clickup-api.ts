@@ -545,6 +545,58 @@ const subcommands: Record<string, SubcommandHandler> = {
     if (!result.ok) return result;
     return { ok: true, data: result.data };
   },
+
+  // ---------------------------------------------------------------------------
+  // Comment, checklist, and chat subcommands
+  // ---------------------------------------------------------------------------
+
+  "add-comment": async (args, config) => {
+    const id = args.positional[0];
+    if (!id) return { ok: false, error: "Missing required argument: <id>" };
+    const body = args.flags["body"];
+    if (!body) return { ok: false, error: "Missing required flag: --body <text>" };
+    const taskEndpoint = taskUrl(id, config.teamId);
+    // Insert /comment before any query string
+    const qsIndex = taskEndpoint.indexOf("?");
+    const commentUrl =
+      qsIndex === -1
+        ? `${taskEndpoint}/comment`
+        : `${taskEndpoint.slice(0, qsIndex)}/comment${taskEndpoint.slice(qsIndex)}`;
+    const result = await request("POST", commentUrl, { comment_text: body });
+    if (!result.ok) return result;
+    return { ok: true, data: result.data };
+  },
+
+  "get-checklist": async (args, config) => {
+    const id = args.positional[0];
+    if (!id) return { ok: false, error: "Missing required argument: <id>" };
+    const url = taskUrl(id, config.teamId);
+    const result = await request("GET", url);
+    if (!result.ok) return result;
+    const data = result.data as Record<string, unknown>;
+    return { ok: true, data: { checklists: data["checklists"] ?? [] } };
+  },
+
+  "check-item": async (args, _config) => {
+    const checklistId = args.positional[0];
+    if (!checklistId) return { ok: false, error: "Missing required argument: <checklist_id>" };
+    const itemId = args.positional[1];
+    if (!itemId) return { ok: false, error: "Missing required argument: <item_id>" };
+    const result = await request("PUT", `/checklist/${checklistId}/checklist_item/${itemId}`, { resolved: true });
+    if (!result.ok) return result;
+    return { ok: true, data: result.data };
+  },
+
+  "send-chat": async (args, config) => {
+    const channelId = args.flags["channel"];
+    if (!channelId) return { ok: false, error: "Missing required flag: --channel <id>" };
+    const body = args.flags["body"];
+    if (!body) return { ok: false, error: "Missing required flag: --body <text>" };
+    const url = `/workspaces/${config.teamId}/chat/channels/${channelId}/messages`;
+    const result = await request("POST", url, { content: body }, BASE_URL_V3);
+    if (!result.ok) return result;
+    return { ok: true, data: result.data };
+  },
 };
 
 export async function main(): Promise<void> {
