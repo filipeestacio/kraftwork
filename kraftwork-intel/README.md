@@ -88,7 +88,7 @@ bun run src/cli.ts query --query "how does X work"
 bun run src/cli.ts query --query "..." --category patterns --limit 5
 
 # Evals
-bun run src/cli.ts eval --skill workspace-start     # Eval one skill
+bun run src/cli.ts eval --skill kraft-start     # Eval one skill
 bun run src/cli.ts eval --all                        # Eval all recorded skills
 bun run src/cli.ts eval --flagged                    # Eval skills with <70% success rate
 bun run src/cli.ts eval --skill X --llm              # Include Ollama LLM scoring
