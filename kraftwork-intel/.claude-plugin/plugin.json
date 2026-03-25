@@ -1,0 +1,9 @@
+{
+  "name": "kraftwork-intel",
+  "version": "2.0.0",
+  "description": "Local intelligence layer — metrics, knowledge, and evals for Kraftwork workflows (requires kraftwork core)",
+  "author": {
+    "name": "Filipe Estacio",
+    "email": "f.estacio@gmail.com"
+  }
+}
