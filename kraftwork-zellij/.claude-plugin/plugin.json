@@ -1,0 +1,9 @@
+{
+  "name": "kraftwork-zellij",
+  "version": "2.0.0",
+  "description": "Zellij terminal multiplexer control for Kraftwork (requires kraftwork core)",
+  "author": {
+    "name": "Filipe Estacio",
+    "email": "f.estacio@gmail.com"
+  }
+}
