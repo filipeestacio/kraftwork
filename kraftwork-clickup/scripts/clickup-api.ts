@@ -511,8 +511,7 @@ const subcommands: Record<string, SubcommandHandler> = {
       body["tags"] = args.flags["tags"]
         .split(",")
         .map((t) => t.trim())
-        .filter(Boolean)
-        .map((t) => ({ name: t }));
+        .filter(Boolean);
     }
 
     const result = await request("POST", `/list/${listId}/task`, body);

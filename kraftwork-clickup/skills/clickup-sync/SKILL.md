@@ -188,7 +188,7 @@ After user confirmation, update `workspace.json`:
 - Update `clickup.defaultList` if it changed.
 - Preserve all other fields: `teamId`, `token_env`, `chatChannelId`, and any other top-level keys.
 
-The spaces map structure mirrors the existing config format. Each space entry includes its `id` and a `lists` map. Each list entry includes its `id`. Slugify all keys.
+The spaces map structure mirrors the existing config format. Each space entry includes its `id` and a `lists` map where values are flat list ID strings. Slugify all keys.
 
 Example resulting structure:
 ```json
@@ -196,23 +196,23 @@ Example resulting structure:
   "clickup": {
     "teamId": "...",
     "token_env": "CLICKUP_API_TOKEN",
-    "defaultList": "active-projects",
+    "defaultList": "list1",
     "chatChannelId": "...",
     "spaces": {
       "admin-portal": {
         "id": "abc123",
         "lists": {
-          "active-projects": { "id": "list1" },
-          "backlog":         { "id": "list2" },
-          "ops-tasks":       { "id": "list3" },
-          "general":         { "id": "list4" }
+          "active-projects": "list1",
+          "backlog": "list2",
+          "ops-tasks": "list3",
+          "general": "list4"
         }
       },
       "engineering": {
         "id": "def456",
         "lists": {
-          "api-work":    { "id": "list5" },
-          "eng-general": { "id": "list6" }
+          "api-work": "list5",
+          "eng-general": "list6"
         }
       }
     }
