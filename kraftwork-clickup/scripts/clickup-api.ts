@@ -327,7 +327,48 @@ export function output(result: Result): void {
 }
 
 // ---------------------------------------------------------------------------
-// 8. Main dispatch
+// 8. Current user cache
+// ---------------------------------------------------------------------------
+
+let _cachedUserId: number | null = null;
+
+/**
+ * Fetches the current user's ID via GET /user and caches it for the
+ * duration of the process to avoid repeated API calls.
+ */
+async function getCurrentUserId(): Promise<number | null> {
+  if (_cachedUserId !== null) return _cachedUserId;
+  const result = await request("GET", "/user");
+  if (!result.ok) return null;
+  const data = result.data as Record<string, unknown>;
+  const user = data["user"] as Record<string, unknown> | undefined;
+  const id = user?.["id"] as number | undefined;
+  if (id === undefined) return null;
+  _cachedUserId = id;
+  return id;
+}
+
+// ---------------------------------------------------------------------------
+// 9. Priority mapping
+// ---------------------------------------------------------------------------
+
+const PRIORITY_MAP: Record<string, number> = {
+  urgent: 1,
+  high: 2,
+  normal: 3,
+  low: 4,
+};
+
+function parsePriority(value: string): number | null {
+  const lower = value.toLowerCase();
+  if (lower in PRIORITY_MAP) return PRIORITY_MAP[lower];
+  const num = parseInt(value, 10);
+  if (!isNaN(num) && num >= 1 && num <= 4) return num;
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// 10. Main dispatch
 // ---------------------------------------------------------------------------
 
 // Subcommand handler registry — populated by later tasks.
@@ -388,6 +429,121 @@ const subcommands: Record<string, SubcommandHandler> = {
       color: s["color"],
     }));
     return { ok: true, data: { statuses } };
+  },
+
+  // ---------------------------------------------------------------------------
+  // Task operation subcommands
+  // ---------------------------------------------------------------------------
+
+  "get-task": async (args, config) => {
+    const id = args.positional[0];
+    if (!id) return { ok: false, error: "Missing required argument: <id>" };
+    const url = taskUrl(id, config.teamId);
+    const result = await request("GET", url);
+    if (!result.ok) return result;
+    return { ok: true, data: result.data };
+  },
+
+  "search-tasks": async (args, config) => {
+    const listId = args.flags["list"];
+    if (!listId) return { ok: false, error: "Missing required flag: --list <id>" };
+
+    const params: string[] = [];
+
+    if (args.flags["status"]) {
+      params.push(`statuses[]=${encodeURIComponent(args.flags["status"])}`);
+    }
+
+    if (args.flags["assignee"] === "me") {
+      const userId = await getCurrentUserId();
+      if (userId === null) {
+        return { ok: false, error: "Failed to fetch current user ID for --assignee me" };
+      }
+      params.push(`assignees[]=${userId}`);
+    }
+
+    if (args.flags["include-closed"] === "true") {
+      params.push("include_closed=true");
+    }
+
+    const base = `/list/${listId}/task${params.length ? "?" + params.join("&") : ""}`;
+    const result = await paginateList(base);
+    if (!result.ok) return result;
+    return { ok: true, data: { tasks: result.data } };
+  },
+
+  "find-tasks": async (args, config) => {
+    const query = args.flags["query"];
+    if (!query) return { ok: false, error: "Missing required flag: --query <q>" };
+
+    const includeClosed = args.flags["include-closed"] === "true" ? "true" : "false";
+    const base = `/team/${config.teamId}/task?name=${encodeURIComponent(query)}&include_closed=${includeClosed}`;
+    const result = await paginateList(base);
+    if (!result.ok) return result;
+    return { ok: true, data: { tasks: result.data } };
+  },
+
+  "create-task": async (args, _config) => {
+    const listId = args.flags["list"];
+    if (!listId) return { ok: false, error: "Missing required flag: --list <id>" };
+    const name = args.flags["name"];
+    if (!name) return { ok: false, error: "Missing required flag: --name <n>" };
+
+    const body: Record<string, unknown> = { name };
+
+    if (args.flags["description"] !== undefined) {
+      body["description"] = args.flags["description"];
+    }
+    if (args.flags["status"] !== undefined) {
+      body["status"] = args.flags["status"];
+    }
+    if (args.flags["priority"] !== undefined) {
+      const priority = parsePriority(args.flags["priority"]);
+      if (priority === null) {
+        return {
+          ok: false,
+          error: `Invalid --priority value: "${args.flags["priority"]}". Use urgent/high/normal/low or 1-4.`,
+        };
+      }
+      body["priority"] = priority;
+    }
+    if (args.flags["tags"] !== undefined) {
+      body["tags"] = args.flags["tags"]
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((t) => ({ name: t }));
+    }
+
+    const result = await request("POST", `/list/${listId}/task`, body);
+    if (!result.ok) return result;
+    return { ok: true, data: result.data };
+  },
+
+  "update-task": async (args, config) => {
+    const id = args.positional[0];
+    if (!id) return { ok: false, error: "Missing required argument: <id>" };
+
+    const body: Record<string, unknown> = {};
+
+    if (args.flags["name"] !== undefined) body["name"] = args.flags["name"];
+    if (args.flags["description"] !== undefined) body["description"] = args.flags["description"];
+    if (args.flags["status"] !== undefined) body["status"] = args.flags["status"];
+    if (args.flags["priority"] !== undefined) {
+      const priority = parsePriority(args.flags["priority"]);
+      if (priority === null) {
+        return {
+          ok: false,
+          error: `Invalid --priority value: "${args.flags["priority"]}". Use urgent/high/normal/low or 1-4.`,
+        };
+      }
+      body["priority"] = priority;
+    }
+
+    const url = taskUrl(id, config.teamId);
+    const result = await request("PUT", url, body);
+    if (!result.ok) return result;
+    return { ok: true, data: result.data };
   },
 };
 
