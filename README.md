@@ -9,6 +9,7 @@ Kraftwork is a monorepo containing a core plugin and optional extensions, all bu
 ```
 kraftwork/              Core workflow plugin
 kraftwork-argocd/       ArgoCD deployment health and debugging
+kraftwork-clickup/      ClickUp task management and team communication
 kraftwork-gitlab/       GitLab CI/CD and merge request workflows
 kraftwork-intel/        Local intelligence layer — metrics, knowledge, evals
 kraftwork-jira/         Jira ticket search and management
@@ -62,6 +63,17 @@ Jira integration for ticket discovery and management.
 | `/jira-search` | Find tickets by sprint, status, board, or custom JQL |
 | `/jira-ticket` | View ticket details, comments, and transitions |
 
+### kraftwork-clickup
+
+ClickUp task management and team communication.
+
+| Command | Purpose |
+|---------|---------|
+| `/clickup-search` | Find tasks by list, status, assignee, or name |
+| `/clickup-ticket` | View, create, update, transition, or comment on tasks |
+| `/clickup-share` | Post updates to Chat channel and task comments |
+| `/clickup-sync` | Sync workspace hierarchy into config |
+
 ### kraftwork-argocd
 
 ArgoCD application monitoring and debugging.
@@ -113,6 +125,7 @@ claude plugins add /path/to/kraftwork/kraftwork
 # Extensions (optional, each requires core)
 claude plugins add /path/to/kraftwork/kraftwork-gitlab
 claude plugins add /path/to/kraftwork/kraftwork-jira
+claude plugins add /path/to/kraftwork/kraftwork-clickup
 claude plugins add /path/to/kraftwork/kraftwork-argocd
 claude plugins add /path/to/kraftwork/kraftwork-review
 claude plugins add /path/to/kraftwork/kraftwork-intel
@@ -124,7 +137,7 @@ claude plugins add /path/to/kraftwork/kraftwork-zellij
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - [Bun](https://bun.sh) — used by helper scripts
 - Git with worktree support
-- Extension-specific: `glab` (GitLab CLI), `acli` (Jira CLI), `argocd` (ArgoCD CLI), [Zellij](https://zellij.dev)
+- Extension-specific: `glab` (GitLab CLI), `acli` (Jira CLI), `argocd` (ArgoCD CLI), [Zellij](https://zellij.dev), `CLICKUP_TOKEN` (ClickUp API token)
 
 ## Design Principles
 
