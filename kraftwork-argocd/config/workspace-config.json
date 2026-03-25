@@ -1,0 +1,35 @@
+{
+  "section": "argocd",
+  "title": "ArgoCD Configuration",
+  "description": "ArgoCD server and application naming for deployment management",
+  "fields": [
+    {
+      "key": "server",
+      "type": "string",
+      "prompt": "What is your ArgoCD server hostname?",
+      "example": "argocd.mycompany.com",
+      "required": true
+    },
+    {
+      "key": "appPattern",
+      "type": "string",
+      "prompt": "What is the naming pattern for your ArgoCD applications? Use {env} as placeholder for environment.",
+      "example": "{env}-my-app",
+      "required": true
+    },
+    {
+      "key": "environments",
+      "type": "string[]",
+      "prompt": "What environments are available?",
+      "example": "staging, production",
+      "required": true
+    },
+    {
+      "key": "defaultEnvironment",
+      "type": "string",
+      "prompt": "Which environment should be checked by default?",
+      "example": "staging",
+      "required": false
+    }
+  ]
+}

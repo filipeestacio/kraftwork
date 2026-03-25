@@ -1,0 +1,9 @@
+{
+  "name": "kraftwork-argocd",
+  "version": "2.0.0",
+  "description": "ArgoCD application health and debugging for Kraftwork (requires kraftwork core)",
+  "author": {
+    "name": "Filipe Estacio",
+    "email": "f.estacio@gmail.com"
+  }
+}
