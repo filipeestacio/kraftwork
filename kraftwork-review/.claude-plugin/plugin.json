@@ -1,0 +1,9 @@
+{
+  "name": "kraftwork-review",
+  "version": "2.0.0",
+  "description": "Independent code review perspectives for Kraftwork (requires kraftwork core)",
+  "author": {
+    "name": "Filipe Estacio",
+    "email": "f.estacio@gmail.com"
+  }
+}
