@@ -23,7 +23,7 @@ When inside a session, all `zellij action` commands target the current session b
 
 ## Workspace Task Tab
 
-When starting work on a new task (e.g., after `workspace-start` creates a worktree), open the task directory in a new Zellij tab named after the task:
+When starting work on a new task (e.g., after `kraft-start` creates a worktree), open the task directory in a new Zellij tab named after the task:
 
 ```bash
 TASK_DIR="$1"
@@ -32,7 +32,7 @@ TAB_NAME="$2"
 zellij action new-tab --name "$TAB_NAME" --cwd "$TASK_DIR"
 ```
 
-### Integration with workspace-start
+### Integration with kraft-start
 
 After a worktree is created at `tasks/<TICKET>-<description>/`:
 1. Extract the tab name from the directory basename (e.g., `MES-1234-add-retry-logic`)
@@ -40,7 +40,7 @@ After a worktree is created at `tasks/<TICKET>-<description>/`:
 3. The user lands in the new tab, ready to work
 
 ```bash
-TASK_DIR="/Users/filipeestacio/Developer/aircall/tasks/MES-1234-add-retry-logic"
+TASK_DIR="/Users/example/Developer/myworkspace/tasks/MES-1234-add-retry-logic"
 TAB_NAME=$(basename "$TASK_DIR")
 
 zellij action new-tab --name "$TAB_NAME" --cwd "$TASK_DIR"

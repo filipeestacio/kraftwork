@@ -245,13 +245,13 @@ Extract 1-3 concrete learnings from the analysis. Each learning should be a sing
 
 For each learning, run:
 ```sh
-bun run ~/.claude/workspace-intel/src/cli.ts store \
+bun run ~/.claude/kraftwork-intel/src/cli.ts store \
   --category "<architecture|pattern|convention|debugging>" \
   --project "<repo-name>" \
   --content "<1-3 sentence learning>"
 ```
 
-If the workspace-intel CLI is not installed or the store command fails, skip this step and note "Intel-store: unavailable" in the output.
+If the kraftwork-intel CLI is not installed or the store command fails, skip this step and note "Intel-store: unavailable" in the output.
 
 Choose the category that best fits each learning:
 - **architecture** — structural decisions, service boundaries, data flow
