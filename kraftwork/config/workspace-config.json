@@ -1,0 +1,51 @@
+[
+  {
+    "section": "workspace",
+    "title": "Workspace Configuration",
+    "description": "Core workspace settings — name, path, and directory structure",
+    "fields": [
+      {
+        "key": "name",
+        "type": "string",
+        "prompt": "What would you like to name this workspace?",
+        "example": "my-company",
+        "required": true
+      },
+      {
+        "key": "path",
+        "type": "string",
+        "prompt": "Where is the workspace root directory?",
+        "example": "~/Developer/my-company",
+        "required": true
+      }
+    ]
+  },
+  {
+    "section": "git",
+    "title": "Git Configuration",
+    "description": "Git host, organisation, and repositories to clone",
+    "fields": [
+      {
+        "key": "host",
+        "type": "string",
+        "prompt": "Which git hosting platform do you use? (e.g., gitlab, github, gitea)",
+        "example": "gitlab",
+        "required": true
+      },
+      {
+        "key": "group",
+        "type": "string",
+        "prompt": "What is your organisation or group name on the git host?",
+        "example": "my-company",
+        "required": true
+      },
+      {
+        "key": "repos",
+        "type": "string[]",
+        "prompt": "Which repositories should be cloned into the workspace?",
+        "example": "api, frontend, shared-libs",
+        "required": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "repos": {
+    "example-repo": {
+      "post_install": [
+        {
+          "cwd": ".",
+          "run": "npm install",
+          "description": "Install dependencies"
+        }
+      ]
+    }
+  }
+}

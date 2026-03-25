@@ -1,0 +1,9 @@
+{
+  "name": "kraftwork",
+  "version": "2.0.0",
+  "description": "Opinionated developer workflow orchestration: worktree lifecycle, spec-driven planning, and workspace configuration",
+  "author": {
+    "name": "Filipe Estacio",
+    "email": "f.estacio@gmail.com"
+  }
+}
