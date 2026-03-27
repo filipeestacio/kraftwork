@@ -47,7 +47,7 @@ for TASK_FILE in "$TASKS_DIR"/*.md; do
 
   if grep -qi "$QUERY" "$TASK_FILE"; then
     TICKET_ID=$(basename "$TASK_FILE" .md)
-    SUMMARY=$(head -1 "$TASK_FILE" | sed 's/^#* *//')
+    SUMMARY=$(head -1 "$TASK_FILE" | sed 's/^#* *//' | sed 's/\\/\\\\/g; s/"/\\"/g')
 
     STATUS="unknown"
     if grep -qi '\[done\]' "$TASK_FILE"; then

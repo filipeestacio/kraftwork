@@ -39,7 +39,7 @@ if [ ! -f "$TASK_FILE" ]; then
   exit 1
 fi
 
-SUMMARY=$(head -1 "$TASK_FILE" | sed 's/^#* *//')
+SUMMARY=$(head -1 "$TASK_FILE" | sed 's/^#* *//' | sed 's/\\/\\\\/g; s/"/\\"/g')
 
 STATUS="unknown"
 if grep -qi '\[done\]' "$TASK_FILE"; then
