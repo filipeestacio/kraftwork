@@ -232,7 +232,7 @@ MR3: ...
 
 If the entire ticket fits in one MR (<200 lines, <10 files), say so — don't split for the sake of splitting.
 
-If the ticket requires stacked branches (MR2 depends on MR1), note that `/kraft-stack` will be used during implementation.
+If the ticket requires stacked branches (MR2 depends on MR1), note that `/kraft-work` (stacking mode) will be used during implementation.
 
 **Get user approval on the MR plan before proceeding to Step 6.**
 
@@ -490,6 +490,6 @@ Reverted change $REVERT_NUM: $CHANGE_TITLE
 
 ## Error Handling
 
-- **Not in worktree:** Guide user to run `/kraft-start`
+- **Not in worktree:** Guide user to run `/kraft-work`
 - **Spec exists:** Ask if continuing or starting fresh
 - **Brainstorming incomplete:** Save progress, allow resumption

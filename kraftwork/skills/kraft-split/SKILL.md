@@ -106,7 +106,7 @@ git diff --name-only "$BASE_BRANCH"...HEAD | sort | awk -F/ '{print $1"/"$2}' | 
 git log --oneline "$BASE_BRANCH"...HEAD
 ```
 
-Propose a split by concern, commit boundary, or file cluster. Walk the user through manual execution via `/kraft-stack` and cherry-pick. STOP after guidance.
+Propose a split by concern, commit boundary, or file cluster. Walk the user through manual execution via `/kraft-work` (stacking mode) and cherry-pick. STOP after guidance.
 
 ### Step 5b: Automated Split (Plan-Driven)
 
@@ -270,7 +270,7 @@ MR1_NUM=$("$SEARCH_PRS" "$MR1_BRANCH" | jq '.[0].number')
 # Create PR2 targeting MR1's branch
 cd "$MR2_DIR"
 TITLE2="$TICKET_ID <MR2 description>"
-BODY2="... Stacked on #$MR1_NUM. Merge #$MR1_NUM first, then promote this PR via /kraft-resume ..."
+BODY2="... Stacked on #$MR1_NUM. Merge #$MR1_NUM first, then promote this PR via /kraft-work ..."
 "$CREATE_PR" "$MR2_BRANCH" "$MR1_BRANCH" "$TITLE2" "$BODY2"
 
 MR2_NUM=$("$SEARCH_PRS" "$MR2_BRANCH" | jq '.[0].number')
@@ -303,7 +303,7 @@ Worktrees:
   MR1: $MR1_DIR
   MR2: $MR2_DIR
 
-Merge order: #$MR1_NUM first, then promote #$MR2_NUM via /kraft-resume
+Merge order: #$MR1_NUM first, then promote #$MR2_NUM via /kraft-work
 ```
 
 ## Edge Cases
@@ -314,7 +314,7 @@ Merge order: #$MR1_NUM first, then promote #$MR2_NUM via /kraft-resume
 - **Cherry-pick conflict** — abort, report conflicting commit and files, ask user to restructure on original branch
 - **Deployability failure** — report failure, suggest minimal fixes, wait for user approval before continuing
 - **PR creation fails** — report error, leave worktrees intact for manual recovery
-- **Sibling worktree path invalid** — `kraft-resume` checks path exists before offering actions
+- **Sibling worktree path invalid** — `kraft-work` checks path exists before offering actions
 - **Commit message already has ticket prefix** — rewrite step skips matching commits
 - **Original worktree after split** — offer to archive via `/kraft-archive`
 
