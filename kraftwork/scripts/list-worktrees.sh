@@ -30,15 +30,22 @@ else
   }
 fi
 
-if [ ! -d "$WORKSPACE/tasks" ]; then
-  echo "Error: No tasks directory at $WORKSPACE" >&2
+TREES_DIR="$WORKSPACE/trees"
+if [ ! -d "$TREES_DIR" ]; then
+  TREES_DIR="$WORKSPACE/tasks"
+fi
+
+if [ ! -d "$TREES_DIR" ]; then
+  echo "Error: No trees directory at $WORKSPACE" >&2
   exit 1
 fi
+
+TREES_NAME=$(basename "$TREES_DIR")
 
 # List worktrees
 case "$FORMAT" in
   detail)
-    find "$WORKSPACE/tasks" -maxdepth 1 -type d ! -name "tasks" | sort | while read -r WT_PATH; do
+    find "$TREES_DIR" -maxdepth 1 -type d ! -name "$TREES_NAME" | sort | while read -r WT_PATH; do
       if [ -d "$WT_PATH/.git" ] || [ -f "$WT_PATH/.git" ]; then
         WT_NAME=$(basename "$WT_PATH")
         BRANCH=$(git -C "$WT_PATH" branch --show-current 2>/dev/null || echo "unknown")
@@ -65,14 +72,14 @@ case "$FORMAT" in
     done
     ;;
   full)
-    find "$WORKSPACE/tasks" -maxdepth 1 -type d ! -name "tasks" | sort | while read -r WT_PATH; do
+    find "$TREES_DIR" -maxdepth 1 -type d ! -name "$TREES_NAME" | sort | while read -r WT_PATH; do
       if [ -d "$WT_PATH/.git" ] || [ -f "$WT_PATH/.git" ]; then
         echo "$WT_PATH"
       fi
     done
     ;;
   *)
-    find "$WORKSPACE/tasks" -maxdepth 1 -type d ! -name "tasks" | sort | while read -r WT_PATH; do
+    find "$TREES_DIR" -maxdepth 1 -type d ! -name "$TREES_NAME" | sort | while read -r WT_PATH; do
       if [ -d "$WT_PATH/.git" ] || [ -f "$WT_PATH/.git" ]; then
         basename "$WT_PATH"
       fi

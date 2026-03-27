@@ -14,6 +14,15 @@ done
 
 DIR="$START_DIR"
 while [ "$DIR" != "/" ]; do
+  if [ -d "$DIR/modules" ]; then
+    echo "$DIR"
+    exit 0
+  fi
+  DIR=$(dirname "$DIR")
+done
+
+DIR="$START_DIR"
+while [ "$DIR" != "/" ]; do
   if [ -d "$DIR/sources" ]; then
     echo "$DIR"
     exit 0

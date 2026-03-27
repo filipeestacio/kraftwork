@@ -14,23 +14,28 @@ if [ -z "$WORKSPACE" ]; then
   exit 1
 fi
 
-TASKS_DIR="$WORKSPACE/tasks"
+TREES_DIR="$WORKSPACE/trees"
+if [ ! -d "$TREES_DIR" ]; then
+  TREES_DIR="$WORKSPACE/tasks"
+fi
 SPECS_DIR="$WORKSPACE/docs/specs"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-if [ ! -d "$TASKS_DIR" ]; then
-  echo "No tasks directory found at $TASKS_DIR" >&2
+if [ ! -d "$TREES_DIR" ]; then
+  echo "No trees directory found at $TREES_DIR" >&2
   exit 1
 fi
+
+TREES_NAME=$(basename "$TREES_DIR")
 
 # Get list of worktrees
 if [ -n "$FILTER_NAME" ]; then
   # Single worktree mode
-  if [ -d "$TASKS_DIR/$FILTER_NAME" ]; then
-    WORKTREES="$TASKS_DIR/$FILTER_NAME"
+  if [ -d "$TREES_DIR/$FILTER_NAME" ]; then
+    WORKTREES="$TREES_DIR/$FILTER_NAME"
   else
     # Try to find by ticket ID prefix
-    WORKTREES=$(find "$TASKS_DIR" -maxdepth 1 -type d -name "${FILTER_NAME}*" 2>/dev/null | head -1)
+    WORKTREES=$(find "$TREES_DIR" -maxdepth 1 -type d -name "${FILTER_NAME}*" 2>/dev/null | head -1)
     if [ -z "$WORKTREES" ]; then
       echo "Worktree not found: $FILTER_NAME" >&2
       exit 1
@@ -38,7 +43,7 @@ if [ -n "$FILTER_NAME" ]; then
   fi
 else
   # All worktrees mode
-  WORKTREES=$(find "$TASKS_DIR" -maxdepth 1 -type d ! -name "tasks" 2>/dev/null | sort)
+  WORKTREES=$(find "$TREES_DIR" -maxdepth 1 -type d ! -name "$TREES_NAME" 2>/dev/null | sort)
 fi
 
 # Output format: JSON array
@@ -47,7 +52,7 @@ FIRST=true
 
 for WT_PATH in $WORKTREES; do
   [ -d "$WT_PATH" ] || continue
-  [ "$WT_PATH" = "$TASKS_DIR" ] && continue
+  [ "$WT_PATH" = "$TREES_DIR" ] && continue
 
   WT_NAME=$(basename "$WT_PATH")
   TICKET_ID=$(echo "$WT_NAME" | grep -oE '^[A-Z]+-[0-9]+' || echo "unknown")

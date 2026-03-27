@@ -16,13 +16,20 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKSPACE="${1:-$("$SCRIPT_DIR/find-workspace.sh")}"
 
-if [ ! -d "$WORKSPACE/sources" ]; then
+MODULES_DIR="$WORKSPACE/modules"
+if [ ! -d "$MODULES_DIR" ]; then
+  MODULES_DIR="$WORKSPACE/sources"
+fi
+
+if [ ! -d "$MODULES_DIR" ]; then
   echo "Error: Workspace not found at $WORKSPACE"
   echo "Run kraft-init first or provide workspace path as argument."
   exit 1
 fi
 
-echo "Syncing repositories in $WORKSPACE/sources..."
+MODULES_NAME=$(basename "$MODULES_DIR")
+
+echo "Syncing repositories in $MODULES_DIR..."
 echo ""
 
 # Use a temporary file to track counts across subshell
@@ -30,7 +37,7 @@ TMPFILE=$(mktemp)
 echo "0 0 0 0" > "$TMPFILE"
 
 # Process each repository
-find "$WORKSPACE/sources" -maxdepth 1 -type d ! -name "sources" | sort | while read -r REPO_PATH; do
+find "$MODULES_DIR" -maxdepth 1 -type d ! -name "$MODULES_NAME" | sort | while read -r REPO_PATH; do
   REPO_NAME=$(basename "$REPO_PATH")
 
   # Skip if not a git repo
@@ -96,7 +103,7 @@ if [ -d "$WORKSPACE/docs/specs/.git" ]; then
 fi
 
 # Count total repos
-TOTAL=$(find "$WORKSPACE/sources" -maxdepth 1 -type d ! -name "sources" | wc -l | tr -d ' ')
+TOTAL=$(find "$MODULES_DIR" -maxdepth 1 -type d ! -name "$MODULES_NAME" | wc -l | tr -d ' ')
 
 # Clean up
 rm -f "$TMPFILE"
