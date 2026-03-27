@@ -1,21 +1,21 @@
 {
   "section": "clickup",
   "title": "ClickUp Configuration",
-  "description": "ClickUp workspace, spaces, and list settings for task management",
+  "description": "ClickUp workspace and API settings",
   "fields": [
     {
-      "key": "teamId",
+      "key": "apiTokenEnv",
       "type": "string",
-      "prompt": "What is your ClickUp workspace/team ID?",
-      "example": "9012143904",
+      "prompt": "What environment variable holds your ClickUp API token?",
+      "example": "CLICKUP_API_TOKEN",
       "required": true
     },
     {
-      "key": "token_env",
+      "key": "teamId",
       "type": "string",
-      "prompt": "Environment variable name for your ClickUp API token",
-      "default": "CLICKUP_TOKEN",
-      "required": false
+      "prompt": "What is your ClickUp team/workspace ID?",
+      "example": "1234567",
+      "required": true
     },
     {
       "key": "defaultList",
@@ -25,16 +25,14 @@
       "required": true
     },
     {
-      "key": "chatChannelId",
-      "type": "string",
-      "prompt": "Chat channel ID for team notifications (leave blank to skip)",
-      "required": false
-    },
-    {
       "key": "spaces",
-      "type": "object",
-      "prompt": "Run /clickup-sync to populate spaces and lists",
-      "required": false
+      "type": "object[]",
+      "prompt": "What ClickUp spaces should be available? For each, provide an ID, name, and description.",
+      "example": [
+        {"id": "12345", "name": "Engineering", "description": "Backend services, APIs, infrastructure"},
+        {"id": "67890", "name": "Product", "description": "Feature specs, design docs"}
+      ],
+      "required": true
     }
   ]
 }
