@@ -1,11 +1,11 @@
 ---
 name: kraft-split
-description: Split a completed branch into two stacked MRs. Reads the plan's MR Split section, validates commit boundaries, creates sub-worktrees, verifies deployability, and creates GitLab MRs. Also works as a pre-MR diff analyzer when no plan exists.
+description: Split a completed branch into two stacked PRs. Reads the plan's MR Split section, validates commit boundaries, creates sub-worktrees, verifies deployability, and creates PRs via the configured git hosting provider. Also works as a pre-PR diff analyzer when no plan exists.
 ---
 
-# Workspace Split - Split Branch Into Stacked MRs
+# Workspace Split - Split Branch Into Stacked PRs
 
-Split a completed implementation branch into two stacked MRs based on the plan's `## MR Split` section. Also works as a standalone diff analyzer when invoked without a plan.
+Split a completed implementation branch into two stacked PRs based on the plan's `## MR Split` section. Also works as a standalone diff analyzer when invoked without a plan.
 
 ## Scripts Used
 
@@ -14,6 +14,7 @@ Split a completed implementation branch into two stacked MRs based on the plan's
 | `find-workspace.sh` | Locate workspace root |
 | `safety-check.sh` | Check for uncommitted/unpushed changes |
 | `stack-metadata.sh` | Read/write `.stack-metadata.json` for stacked worktrees |
+| `resolve-provider.sh` | Resolve git hosting provider scripts |
 
 ## Script Paths
 
@@ -36,13 +37,20 @@ These are guidelines, not hard rules. A 250-line MR that's all test code is fine
 ### Step 1: Validate Environment
 
 ```sh
+# Gate on provider capability before doing any work
+<scripts-dir>/resolve-provider.sh has git-hosting create-pr || {
+  echo "kraft-split requires a git hosting provider with PR creation capability."
+  echo "Configure a git hosting provider via /kraft-config."
+  exit 1
+}
+
 WORKTREE_PATH=$(git rev-parse --show-toplevel 2>/dev/null)
 
 case "$WORKTREE_PATH" in
-  */tasks/*)
+  */trees/*)
     ;;
   *)
-    echo "Not in a worktree. Run /kraft-start first."
+    echo "Not in a worktree. Run /kraft-work first."
     exit 1
     ;;
 esac
@@ -75,7 +83,7 @@ COMMITS=$(git rev-list --count "$BASE_BRANCH"...HEAD)
 
 Present the analysis.
 
-**If under thresholds and no plan split section:** "This diff is MR-ready. Proceed with `/glab-mr create`." STOP.
+**If under thresholds and no plan split section:** "This diff is PR-ready. Proceed with creating a PR via your provider." STOP.
 
 **If over thresholds or plan has `## MR Split` section:** Continue.
 
@@ -98,7 +106,7 @@ git diff --name-only "$BASE_BRANCH"...HEAD | sort | awk -F/ '{print $1"/"$2}' | 
 git log --oneline "$BASE_BRANCH"...HEAD
 ```
 
-Propose a split by concern, commit boundary, or file cluster. Walk the user through manual execution via `/kraft-stack` and cherry-pick. STOP after guidance.
+Propose a split by concern, commit boundary, or file cluster. Walk the user through manual execution via `/kraft-work` (stacking mode) and cherry-pick. STOP after guidance.
 
 ### Step 5b: Automated Split (Plan-Driven)
 
@@ -132,7 +140,7 @@ For each commit:
 
 ```sh
 MR1_SLUG=$(slugify MR1 description from plan)
-MR1_DIR="$WORKSPACE/tasks/${TICKET_ID}-MR1-${MR1_SLUG}"
+MR1_DIR="$WORKSPACE/trees/${TICKET_ID}-MR1-${MR1_SLUG}"
 MR1_BRANCH="${TICKET_ID}-MR1-${MR1_SLUG}"
 
 # Create worktree from main
@@ -152,11 +160,11 @@ If cherry-pick fails: `git cherry-pick --abort`, report the conflict, ask user t
 
 #### 5b.4: Verify MR1 Deployability
 
+Read the build and test commands from the repo's package.json (or equivalent config file) rather than assuming a specific package manager. If no commands can be determined, ask the user what build and test commands to run.
+
 ```sh
 cd "$MR1_DIR"
-pnpm install
-pnpm build
-pnpm test
+# Run whatever install, build, and test commands apply for this repo
 ```
 
 If any step fails:
@@ -171,7 +179,7 @@ Run from MR1's worktree so MR2 branches from MR1's HEAD:
 
 ```sh
 MR2_SLUG=$(slugify MR2 description from plan)
-MR2_DIR="$WORKSPACE/tasks/${TICKET_ID}-MR2-${MR2_SLUG}"
+MR2_DIR="$WORKSPACE/trees/${TICKET_ID}-MR2-${MR2_SLUG}"
 MR2_BRANCH="${TICKET_ID}-MR2-${MR2_SLUG}"
 
 cd "$MR1_DIR"
@@ -190,7 +198,7 @@ Same cherry-pick conflict handling as 5b.3.
 
 #### 5b.6: Verify MR2 Deployability
 
-Same as 5b.4: `pnpm install`, `pnpm build`, `pnpm test`.
+Same as 5b.4: read build and test commands from the repo's package.json or equivalent, or ask the user what commands to run.
 
 #### 5b.7: Write Stack Metadata
 
@@ -206,7 +214,7 @@ else
   git config --global core.excludesFile "$GLOBAL_IGNORE"
 fi
 
-# Write parent metadata (MR number filled in after MR creation)
+# Write parent metadata (PR number filled in after PR creation)
 <scripts-dir>/stack-metadata.sh write "$MR1_DIR" '{
   "role": "parent",
   "ticket": "'"$TICKET_ID"'",
@@ -235,33 +243,42 @@ fi
 }'
 ```
 
-#### 5b.8: Push and Create MRs
+#### 5b.8: Push and Create PRs
+
+{{git-hosting:pr-description-guide}}
 
 ```sh
 cd "$MR1_DIR" && git push -u origin "$MR1_BRANCH"
 cd "$MR2_DIR" && git push -u origin "$MR2_BRANCH"
 
-# Create MR1 targeting main
+# Resolve the PR creation script via provider delegation
+CREATE_PR=$(<scripts-dir>/resolve-provider.sh script git-hosting create-pr) || {
+  echo "kraft-split requires a git hosting provider with PR creation capability."
+  exit 1
+}
+
+# Create PR1 targeting main
 cd "$MR1_DIR"
-glab mr create --title "$TICKET_ID <MR1 description>" \
-  --target-branch main \
-  --description "..."
+TITLE="$TICKET_ID <MR1 description>"
+BODY="..."
+"$CREATE_PR" "$MR1_BRANCH" "main" "$TITLE" "$BODY"
 
-# Get MR1 number from output
-MR1_NUM=$(glab mr list --source-branch "$MR1_BRANCH" --json number | jq '.[0].number')
+# Get PR1 number
+SEARCH_PRS=$(<scripts-dir>/resolve-provider.sh script git-hosting search-prs)
+MR1_NUM=$("$SEARCH_PRS" "$MR1_BRANCH" | jq '.[0].number')
 
-# Create MR2 targeting MR1's branch
+# Create PR2 targeting MR1's branch
 cd "$MR2_DIR"
-glab mr create --title "$TICKET_ID <MR2 description>" \
-  --target-branch "$MR1_BRANCH" \
-  --description "... Stacked on !$MR1_NUM. Merge !$MR1_NUM first, then promote this MR via /kraft-resume ..."
+TITLE2="$TICKET_ID <MR2 description>"
+BODY2="... Stacked on #$MR1_NUM. Merge #$MR1_NUM first, then promote this PR via /kraft-work ..."
+"$CREATE_PR" "$MR2_BRANCH" "$MR1_BRANCH" "$TITLE2" "$BODY2"
 
-MR2_NUM=$(glab mr list --source-branch "$MR2_BRANCH" --json number | jq '.[0].number')
+MR2_NUM=$("$SEARCH_PRS" "$MR2_BRANCH" | jq '.[0].number')
 ```
 
-#### 5b.9: Update Metadata with MR Numbers
+#### 5b.9: Update Metadata with PR Numbers
 
-Update both `.stack-metadata.json` files with the MR numbers (re-read, patch, re-write via `stack-metadata.sh`).
+Update both `.stack-metadata.json` files with the PR numbers (re-read, patch, re-write via `stack-metadata.sh`).
 
 #### 5b.10: Offer to Archive Original Worktree
 
@@ -279,14 +296,14 @@ If user declines, leave it as-is.
 ```
 Split complete for $TICKET_ID
 
-  !$MR1_NUM  $MR1_BRANCH  → main
-    ↳ !$MR2_NUM  $MR2_BRANCH  → !$MR1_NUM
+  #$MR1_NUM  $MR1_BRANCH  → main
+    ↳ #$MR2_NUM  $MR2_BRANCH  → #$MR1_NUM
 
 Worktrees:
   MR1: $MR1_DIR
   MR2: $MR2_DIR
 
-Merge order: !$MR1_NUM first, then promote !$MR2_NUM via /kraft-resume
+Merge order: #$MR1_NUM first, then promote #$MR2_NUM via /kraft-work
 ```
 
 ## Edge Cases
@@ -296,14 +313,14 @@ Merge order: !$MR1_NUM first, then promote !$MR2_NUM via /kraft-resume
 - **Worktree is dirty** — fail fast via `safety-check.sh`, ask user to commit or stash
 - **Cherry-pick conflict** — abort, report conflicting commit and files, ask user to restructure on original branch
 - **Deployability failure** — report failure, suggest minimal fixes, wait for user approval before continuing
-- **MR creation fails** — report error, leave worktrees intact for manual recovery
-- **Sibling worktree path invalid** — `kraft-resume` checks path exists before offering actions
+- **PR creation fails** — report error, leave worktrees intact for manual recovery
+- **Sibling worktree path invalid** — `kraft-work` checks path exists before offering actions
 - **Commit message already has ticket prefix** — rewrite step skips matching commits
 - **Original worktree after split** — offer to archive via `/kraft-archive`
 
 ## Error Handling
 
-- **Not in worktree:** Guide to `/kraft-start`
-- **Workspace not found:** Guide to `/kraft-init`
-- **glab not authenticated:** Guide to `glab auth login`
+- **Not in worktree:** Guide to `/kraft-work`
+- **Workspace not found:** Guide to `/kraft-config`
+- **Provider not configured or missing capability:** Guide to configure a git hosting provider via `/kraft-config`
 - **Cross-boundary commit detected:** STOP, report details, ask user to fix

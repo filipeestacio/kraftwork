@@ -12,7 +12,7 @@ Analyze a completed ticket end-to-end — from plan through merge — and captur
 | Script | Purpose |
 |--------|---------|
 | `find-workspace.sh` | Locate workspace root |
-| `search-ticket-mrs.sh` | Find MRs by ticket ID |
+| `resolve-provider.sh` | Delegate to the configured git-hosting provider |
 
 ## Script Paths
 
@@ -31,13 +31,13 @@ When you load this skill, note its file path and compute the scripts directory. 
 WORKSPACE=$(<scripts-dir>/find-workspace.sh)
 ```
 
-The ticket ID must be provided as an argument (e.g., `PROJ-1234`). If not provided, use AskUserQuestion to request it.
+The ticket ID must be provided as an argument. If not provided, use AskUserQuestion to request it.
 
-Validate format:
+Validate:
 ```sh
 TICKET_ID="<argument>"
-if ! echo "$TICKET_ID" | grep -qE '^[A-Z]+-[0-9]+$'; then
-  echo "Invalid ticket ID format: $TICKET_ID"
+if [ -z "$TICKET_ID" ]; then
+  echo "Ticket ID required"
   exit 1
 fi
 ```
@@ -57,28 +57,18 @@ Read each file that exists using the Read tool. Missing artifacts are noted as g
 
 ### Step 3: Find Merge Requests
 
-First, try to detect the repo from the current git context (most common case — running from a worktree):
+Use the configured git-hosting provider via provider delegation:
 
 ```sh
-REMOTE_URL=$(git remote get-url origin 2>/dev/null)
+SEARCH_PRS=$(<scripts-dir>/resolve-provider.sh script git-hosting search-prs 2>/dev/null || echo "")
+if [ -n "$SEARCH_PRS" ]; then
+  MRS=$("$SEARCH_PRS" "$TICKET_ID")
+fi
 ```
 
-If a remote is found, extract the GitLab project path and search at project level:
+If no git-hosting provider is configured or search-prs is unavailable, proceed with local artifacts only.
 
-```sh
-# git@gitlab.com:group/subgroup/repo.git → group/subgroup/repo
-REPO=$(echo "$REMOTE_URL" | sed -E 's|.*:(.*)\.git$|\1|; s|https?://[^/]+/||')
-ENCODED_REPO=$(echo "$REPO" | sed 's|/|%2F|g')
-MRS=$(glab api "projects/$ENCODED_REPO/merge_requests?search=$TICKET_ID&state=all&per_page=10" 2>/dev/null)
-```
-
-If no git remote is available (running from workspace root), fall back to the group-level search script:
-
-```sh
-MRS=$(<scripts-dir>/search-ticket-mrs.sh "$TICKET_ID")
-```
-
-If no MRs are found via either method, inform the user and ask whether to proceed with local artifacts only via AskUserQuestion.
+If no MRs are found, inform the user and ask whether to proceed with local artifacts only via AskUserQuestion.
 
 Select the primary MR — prefer merged state:
 
@@ -96,17 +86,19 @@ MR_URL=$(echo "$MR" | jq -r '.web_url')
 MR_TITLE=$(echo "$MR" | jq -r '.title')
 ```
 
-Note: project-level API returns `.iid` and `.web_url`; the group search script returns `.id` and `.url`. Use whichever fields match the source.
-
 ### Step 4: Gather MR Data
 
-Fetch MR details, discussions, diff, and commits:
+Fetch MR details, discussions, diff, and commits via provider delegation:
 
 ```sh
-MR_DETAILS=$(glab api "projects/$ENCODED_REPO/merge_requests/$IID")
-MR_DISCUSSIONS=$(glab api "projects/$ENCODED_REPO/merge_requests/$IID/discussions")
-MR_CHANGES=$(glab api "projects/$ENCODED_REPO/merge_requests/$IID/changes")
-MR_COMMITS=$(glab api "projects/$ENCODED_REPO/merge_requests/$IID/commits")
+FETCH_PR=$(<scripts-dir>/resolve-provider.sh script git-hosting fetch-pr-details 2>/dev/null || echo "")
+if [ -n "$FETCH_PR" ]; then
+  PR_DATA=$("$FETCH_PR" "$IID")
+  MR_DETAILS=$(echo "$PR_DATA" | jq '.details')
+  MR_DISCUSSIONS=$(echo "$PR_DATA" | jq '.discussions')
+  MR_CHANGES=$(echo "$PR_DATA" | jq '.changes')
+  MR_COMMITS=$(echo "$PR_DATA" | jq '.commits')
+fi
 ```
 
 Extract key data points:
@@ -275,3 +267,4 @@ Present the questions to the user. User answers are not captured — the questio
 3. **No local artifacts** — Proceed with MR data only. The Plan vs Reality section becomes "No plan artifacts found — this is itself an observation."
 4. **Multiple MRs** — Analyze the primary MR in depth. List others in the Artifacts section with their URLs.
 5. **Large diffs** — For MRs with >500 changed lines, summarize by file (path + lines added/removed) instead of reading full diffs. Focus qualitative analysis on the files most discussed in review threads.
+6. **No git-hosting provider** — If `resolve-provider.sh` returns empty or errors, skip all MR fetching and proceed with local artifacts only. Note "Git-hosting provider: unavailable" in the output.

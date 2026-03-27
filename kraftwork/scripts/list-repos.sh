@@ -30,17 +30,24 @@ else
   }
 fi
 
-if [ ! -d "$WORKSPACE/sources" ]; then
-  echo "Error: No sources directory at $WORKSPACE" >&2
+MODULES_DIR="$WORKSPACE/modules"
+if [ ! -d "$MODULES_DIR" ]; then
+  MODULES_DIR="$WORKSPACE/sources"
+fi
+
+if [ ! -d "$MODULES_DIR" ]; then
+  echo "Error: No modules directory at $WORKSPACE" >&2
   exit 1
 fi
+
+MODULES_NAME=$(basename "$MODULES_DIR")
 
 # List repositories
 case "$FORMAT" in
   json)
     echo "["
     FIRST=1
-    find "$WORKSPACE/sources" -maxdepth 1 -type d ! -name "sources" | sort | while read -r REPO_PATH; do
+    find "$MODULES_DIR" -maxdepth 1 -type d ! -name "$MODULES_NAME" | sort | while read -r REPO_PATH; do
       if [ -d "$REPO_PATH/.git" ]; then
         REPO_NAME=$(basename "$REPO_PATH")
         if [ "$FIRST" = "1" ]; then
@@ -55,14 +62,14 @@ case "$FORMAT" in
     echo "]"
     ;;
   full)
-    find "$WORKSPACE/sources" -maxdepth 1 -type d ! -name "sources" | sort | while read -r REPO_PATH; do
+    find "$MODULES_DIR" -maxdepth 1 -type d ! -name "$MODULES_NAME" | sort | while read -r REPO_PATH; do
       if [ -d "$REPO_PATH/.git" ]; then
         echo "$REPO_PATH"
       fi
     done
     ;;
   *)
-    find "$WORKSPACE/sources" -maxdepth 1 -type d ! -name "sources" | sort | while read -r REPO_PATH; do
+    find "$MODULES_DIR" -maxdepth 1 -type d ! -name "$MODULES_NAME" | sort | while read -r REPO_PATH; do
       if [ -d "$REPO_PATH/.git" ]; then
         basename "$REPO_PATH"
       fi

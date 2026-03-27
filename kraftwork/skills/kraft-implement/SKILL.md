@@ -9,15 +9,15 @@ Execute implementation based on the spec and task list, with all code changes co
 
 ## Architecture
 
-- **Worktrees:** `[WORKSPACE]/tasks/TICKET-123/` - Where code changes happen
+- **Worktrees:** `[WORKSPACE]/trees/TICKET-123/` - Where code changes happen
 - **Specs:** `[WORKSPACE]/docs/specs/TICKET-123/` - Read-only planning artifacts
-- **Sources:** `[WORKSPACE]/sources/` - Reference only, no modifications
+- **Modules:** `[WORKSPACE]/modules/` - Reference only, no modifications
 
 ## Key Constraints
 
 1. **Worktree-only writes** - All code modifications confined to working directory
 2. **Spec path reads** - Read planning artifacts from central docs/specs/ location
-3. **No parent access** - Don't traverse to ../sources/ for writes
+3. **No parent access** - Don't traverse to ../modules/ for writes
 4. **Task tracking** - Mark tasks complete in docs/specs/TICKET/tasks.md
 
 ## Scripts Used
@@ -42,18 +42,18 @@ When you load this skill, note its file path and compute the scripts directory. 
 ```sh
 WORKTREE_PATH=$(git rev-parse --show-toplevel 2>/dev/null)
 
-# Check if in a tasks directory
+# Check if in a trees directory
 case "$WORKTREE_PATH" in
-  */tasks/*)
+  */trees/*)
     ;;
   *)
-    echo "Not in a worktree. Run /kraft-start first."
+    echo "Not in a worktree. Run /kraft-work first."
     exit 1
     ;;
 esac
 
 # Extract context
-TICKET_ID=$(basename "$WORKTREE_PATH" | grep -oE '^[A-Z]+-[0-9]+')
+TICKET_ID=$(basename "$WORKTREE_PATH" | grep -oE '^[A-Z]+-[0-9]+' || basename "$WORKTREE_PATH")
 WORKSPACE=$(<scripts-dir>/find-workspace.sh)
 SPEC_DIR="$WORKSPACE/docs/specs/$TICKET_ID"
 
@@ -222,7 +222,7 @@ Options:
 For each selected task:
 
 1. **Read the spec** for context on what to build
-2. **Check sources/** for existing patterns to follow
+2. **Check modules/** for existing patterns to follow
 3. **Implement in worktree** - all file writes go to $WORKTREE_PATH
 4. **Mark task complete** in tasks.md
 
@@ -231,7 +231,7 @@ Implementation loop:
 For task: "Add API endpoints"
 
 1. Reading spec for API requirements...
-2. Checking sources/messaging/src/api/ for patterns...
+2. Checking modules/messaging/src/api/ for patterns...
 3. Creating $WORKTREE_PATH/src/api/newEndpoint.ts
 4. Updating $SPEC_DIR/tasks.md - marking task complete
 ```
@@ -300,7 +300,7 @@ Next steps:
 ## Implementation Guidelines
 
 ### File Organization
-- Follow existing patterns from `sources/`
+- Follow existing patterns from `modules/`
 - Keep imports organized
 - Add appropriate types/interfaces
 
@@ -316,14 +316,14 @@ Next steps:
 
 ## Pattern Discovery
 
-Use sources/ to find patterns:
+Use modules/ to find patterns:
 
 ```sh
 # Find similar implementations
-grep -r "similar_pattern" "$WORKSPACE/sources/" --include="*.ts" -l
+grep -r "similar_pattern" "$WORKSPACE/modules/" --include="*.ts" -l
 
 # Read existing examples
-cat "$WORKSPACE/sources/frontend/src/components/Example.tsx"
+cat "$WORKSPACE/modules/frontend/src/components/Example.tsx"
 ```
 
 Apply discovered patterns to the implementation in the worktree.
@@ -339,5 +339,5 @@ Apply discovered patterns to the implementation in the worktree.
 
 - All writes go to the worktree only
 - Specs are read-only during implementation
-- Use sources/ for reference, never modify
+- Use modules/ for reference, never modify
 - Commit frequently to preserve progress

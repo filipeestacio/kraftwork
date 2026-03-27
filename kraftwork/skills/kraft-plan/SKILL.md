@@ -1,17 +1,17 @@
 ---
 name: kraft-plan
-description: Orchestrate planning for a ticket. Creates specs directly during planning phase, or tracked change records once implementation has started. Use after kraft-start.
+description: Orchestrate planning for a ticket. Creates specs directly during planning phase, or tracked change records once implementation has started. Use after kraft-work.
 ---
 
 # Workspace Plan - Planning Workflow
 
-Orchestrate the planning phase for a Jira ticket, using the centralized specs directory to keep code directories clean.
+Orchestrate the planning phase for a ticket, using the centralized specs directory to keep code directories clean.
 
 ## Architecture
 
-- **Worktrees:** `[WORKSPACE]/tasks/TICKET-123/` - Clean code only
+- **Worktrees:** `[WORKSPACE]/trees/TICKET-123/` - Clean code only
 - **Specs:** `[WORKSPACE]/docs/specs/TICKET-123/` - All planning artifacts
-- **Sources:** `[WORKSPACE]/sources/` - Read-only repos for pattern discovery
+- **Modules:** `[WORKSPACE]/modules/` - Read-only repos for pattern discovery
 
 ## Scripts Used
 
@@ -37,13 +37,13 @@ Verify we're in a valid worktree:
 ```sh
 WORKTREE_PATH=$(git rev-parse --show-toplevel 2>/dev/null)
 
-# Check if in a tasks directory
+# Check if in a trees directory
 case "$WORKTREE_PATH" in
-  */tasks/*)
+  */trees/*)
     echo "Worktree: $WORKTREE_PATH"
     ;;
   *)
-    echo "Not in a worktree. Run /kraft-start first."
+    echo "Not in a worktree. Run /kraft-work first."
     exit 1
     ;;
 esac
@@ -52,8 +52,15 @@ esac
 ### Step 2: Extract Context
 
 ```sh
-# Extract ticket ID from directory name
-TICKET_ID=$(basename "$WORKTREE_PATH" | grep -oE '^[A-Z]+-[0-9]+')
+# Extract ticket ID using provider-aware pattern
+scripts_dir=$(dirname "$(dirname "$(dirname "$(dirname "${BASH_SOURCE[0]}")")")")/scripts
+TICKET_PATTERN=$($scripts_dir/resolve-provider.sh fragment ticket-management ticket-id-pattern 2>/dev/null || echo "")
+
+if [ -z "$TICKET_PATTERN" ]; then
+  TICKET_ID=$(basename "$WORKTREE_PATH")
+else
+  TICKET_ID=$(basename "$WORKTREE_PATH" | grep -oE "$TICKET_PATTERN")
+fi
 
 # Find workspace root
 WORKSPACE=$(<scripts-dir>/find-workspace.sh)
@@ -177,7 +184,7 @@ Invoke superpowers:brainstorming with context:
 - Ticket: $TICKET_ID
 - Worktree: $WORKTREE_PATH
 - Spec directory: $SPEC_DIR
-- Sources available at: $WORKSPACE/sources/ (for pattern discovery)
+- Modules available at: $WORKSPACE/modules/ (for pattern discovery)
 
 The brainstorming output should be saved to:
 - $SPEC_DIR/idea.md - Initial idea capture
@@ -186,7 +193,7 @@ The brainstorming output should be saved to:
 
 The brainstorming skill will:
 1. Ask questions to understand the feature
-2. Explore existing patterns in `sources/`
+2. Explore existing patterns in `modules/`
 3. Present design options with trade-offs
 4. Build the specification incrementally
 
@@ -225,7 +232,7 @@ MR3: ...
 
 If the entire ticket fits in one MR (<200 lines, <10 files), say so — don't split for the sake of splitting.
 
-If the ticket requires stacked branches (MR2 depends on MR1), note that `/kraft-stack` will be used during implementation.
+If the ticket requires stacked branches (MR2 depends on MR1), note that `/kraft-work` (stacking mode) will be used during implementation.
 
 **Get user approval on the MR plan before proceeding to Step 6.**
 
@@ -309,19 +316,19 @@ Next steps:
 
 Then exit (do not continue to normal spec creation flow).
 
-## Integration with Sources
+## Integration with Modules
 
-During brainstorming, use the `sources/` directory for context:
+During brainstorming, use the `modules/` directory for context:
 
 ```sh
 # Search for similar patterns
-grep -r "pattern_name" "$WORKSPACE/sources/" --include="*.ts"
+grep -r "pattern_name" "$WORKSPACE/modules/" --include="*.ts"
 
 # Find related components
-find "$WORKSPACE/sources/" -name "*ComponentName*"
+find "$WORKSPACE/modules/" -name "*ComponentName*"
 
 # Read existing implementations
-cat "$WORKSPACE/sources/repo-name/src/path/to/file.ts"
+cat "$WORKSPACE/modules/repo-name/src/path/to/file.ts"
 ```
 
 This helps ensure new code follows existing patterns and conventions.
@@ -333,7 +340,7 @@ This helps ensure new code follows existing patterns and conventions.
 # $TICKET_ID - Feature Name
 
 ## Summary
-One-paragraph description from Jira or user.
+One-paragraph description from the ticket or user.
 
 ## Initial Requirements
 - Requirement 1
@@ -483,6 +490,6 @@ Reverted change $REVERT_NUM: $CHANGE_TITLE
 
 ## Error Handling
 
-- **Not in worktree:** Guide user to run `/kraft-start`
+- **Not in worktree:** Guide user to run `/kraft-work`
 - **Spec exists:** Ask if continuing or starting fresh
 - **Brainstorming incomplete:** Save progress, allow resumption

@@ -57,17 +57,17 @@ if git rev-parse "origin/$BRANCH" >/dev/null 2>&1; then
   fi
 fi
 
-# Check for open MR (requires glab)
-HAS_OPEN_MR=0
-MR_URL=""
-if command -v glab >/dev/null 2>&1; then
-  MR_INFO=$(glab mr view "$BRANCH" --json state,webUrl 2>/dev/null || echo "")
-  if [ -n "$MR_INFO" ]; then
-    MR_STATE=$(echo "$MR_INFO" | grep -o '"state":"[^"]*"' | cut -d'"' -f4 || echo "")
-    if [ "$MR_STATE" = "opened" ]; then
-      HAS_OPEN_MR=1
-      MR_URL=$(echo "$MR_INFO" | grep -o '"webUrl":"[^"]*"' | cut -d'"' -f4 || echo "")
-    fi
+HAS_OPEN_PR=0
+PR_URL=""
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SEARCH_PRS=$("$SCRIPT_DIR/resolve-provider.sh" script git-hosting search-prs 2>/dev/null || echo "")
+if [ -n "$SEARCH_PRS" ]; then
+  TICKET_HINT=$(echo "$BRANCH" | grep -oE '^[A-Za-z]+-[0-9]+' || echo "$BRANCH")
+  PR_RESULTS=$("$SEARCH_PRS" "$TICKET_HINT" 2>/dev/null || echo "[]")
+  OPEN_PR=$(echo "$PR_RESULTS" | jq -r '[.[] | select(.state == "opened" and .branch == "'"$BRANCH"'")] | first // empty' 2>/dev/null || echo "")
+  if [ -n "$OPEN_PR" ] && [ "$OPEN_PR" != "null" ]; then
+    HAS_OPEN_PR=1
+    PR_URL=$(echo "$OPEN_PR" | jq -r '.url // empty')
   fi
 fi
 
@@ -85,9 +85,9 @@ cat <<EOF
     "has_commits": $([ "$HAS_UNPUSHED" = "1" ] && echo "true" || echo "false"),
     "count": ${UNPUSHED_COUNT:-0}
   },
-  "open_mr": {
-    "exists": $([ "$HAS_OPEN_MR" = "1" ] && echo "true" || echo "false"),
-    "url": "$MR_URL"
+  "open_pr": {
+    "exists": $([ "$HAS_OPEN_PR" = "1" ] && echo "true" || echo "false"),
+    "url": "$PR_URL"
   }
 }
 EOF

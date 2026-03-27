@@ -47,7 +47,7 @@ fi
 
 If not in a worktree or ticket ID provided as argument:
 ```sh
-WORKTREE_PATH=$(find "$WORKSPACE/tasks" -maxdepth 1 -type d -name "${TICKET_ID}-*" | head -1)
+WORKTREE_PATH=$(find "$WORKSPACE/trees" -maxdepth 1 -type d -name "${TICKET_ID}-*" | head -1)
 ```
 
 If no ticket specified, list active worktrees:
@@ -70,8 +70,8 @@ Parse results:
 ```sh
 HAS_UNCOMMITTED=$(echo "$SAFETY" | jq -r '.uncommitted.has_changes')
 HAS_UNPUSHED=$(echo "$SAFETY" | jq -r '.unpushed.has_commits')
-HAS_OPEN_MR=$(echo "$SAFETY" | jq -r '.open_mr.exists')
-MR_URL=$(echo "$SAFETY" | jq -r '.open_mr.url')
+HAS_OPEN_PR=$(echo "$SAFETY" | jq -r '.open_pr.exists')
+PR_URL=$(echo "$SAFETY" | jq -r '.open_pr.url')
 ```
 
 ### Step 4: Confirm with User
@@ -82,7 +82,7 @@ If any warnings were raised, use AskUserQuestion:
 Safety checks found potential issues:
 - Uncommitted changes: [count] files modified
 - Unpushed commits: [count] commits
-- Open MR: [url]
+- Open PR: [url]
 
 Are you sure you want to archive this worktree?
 ```
@@ -174,6 +174,6 @@ Note: The branch still exists. To delete it:
 
 1. **Never force-remove with uncommitted changes** without explicit user confirmation
 2. **Always check for unpushed commits** before removing
-3. **Warn about open MRs** - user might lose context
+3. **Warn about open PRs** - user might lose context
 4. **Keep specs by default** - they might be needed later
 5. **Navigate away first** - prevents "cannot remove current directory" errors

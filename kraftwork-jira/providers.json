@@ -1,0 +1,15 @@
+{
+  "providers": [
+    {
+      "category": "ticket-management",
+      "scripts": {
+        "fetch-ticket": "scripts/fetch-ticket.sh",
+        "search-tickets": "scripts/search-tickets.sh",
+        "transition-ticket": "scripts/transition-ticket.sh"
+      },
+      "fragments": {
+        "ticket-id-pattern": "fragments/ticket-id-pattern.md"
+      }
+    }
+  ]
+}
