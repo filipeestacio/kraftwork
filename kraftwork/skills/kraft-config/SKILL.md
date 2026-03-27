@@ -1,0 +1,270 @@
+---
+name: kraft-config
+description: Provider-aware workspace configuration wizard — idempotent and incremental.
+---
+
+# Workspace Config
+
+Set up or reconfigure a development workspace by discovering installed providers, collecting provider-specific config, and scaffolding the workspace directory structure.
+
+## Prerequisites
+
+- `jq` for JSON parsing
+- `git` installed
+
+## Script Paths
+
+**IMPORTANT:** Derive the scripts directory from this skill file's location:
+- This skill file: `kraftwork/skills/kraft-config/SKILL.md`
+- Workspace plugin root: 3 directories up from this file
+- Scripts directory: `<workspace-root>/scripts/`
+
+When you load this skill, note its file path and compute the scripts directory. For example, if this skill is at `/path/to/kraftwork/skills/kraft-config/SKILL.md`, then scripts are at `/path/to/kraftwork/scripts/`.
+
+## Phase 1 — Provider Discovery
+
+### Step 1: Read Enabled Plugins
+
+Read `~/.claude/settings.json` and extract the `enabledPlugins` object. Keys are formatted as `pluginName@marketplace`, values are booleans. If `enabledPlugins` is absent, treat all cached plugins as enabled.
+
+```sh
+SETTINGS="$HOME/.claude/settings.json"
+CACHE_DIR="$HOME/.claude/plugins/cache"
+
+ENABLED_PLUGINS=$(jq -r '.enabledPlugins // {} | to_entries[] | select(.value == true) | .key' "$SETTINGS")
+```
+
+### Step 2: Collect Provider Declarations
+
+For each enabled `kraftwork-*` plugin, check for a `providers.json` at:
+
+```
+~/.claude/plugins/cache/<marketplace>/<pluginName>/<version>/providers.json
+```
+
+The `<version>` directory is whichever single directory exists under the plugin name.
+
+```sh
+PROVIDERS_BY_CATEGORY=()
+for ENTRY in $ENABLED_PLUGINS; do
+  PLUGIN_NAME="${ENTRY%%@*}"
+  MARKETPLACE="${ENTRY##*@}"
+
+  # Only process kraftwork-* plugins
+  [[ "$PLUGIN_NAME" == kraftwork-* ]] || continue
+
+  PLUGIN_DIR="$CACHE_DIR/$MARKETPLACE/$PLUGIN_NAME"
+  [ -d "$PLUGIN_DIR" ] || continue
+
+  VERSION_DIR=$(ls -1 "$PLUGIN_DIR" | head -1)
+  PROVIDERS_FILE="$PLUGIN_DIR/$VERSION_DIR/providers.json"
+
+  if [ -f "$PROVIDERS_FILE" ]; then
+    echo "Found providers: $PLUGIN_NAME ($PROVIDERS_FILE)"
+  fi
+done
+```
+
+Parse each `providers.json` and collect provider declarations grouped by category. A `providers.json` lists which categories a plugin handles, for example:
+
+```json
+[
+  { "category": "git-hosting", "plugin": "kraftwork-gitlab" },
+  { "category": "ticket-management", "plugin": "kraftwork-jira" }
+]
+```
+
+### Step 3: Select Providers Per Category
+
+The three categories are: `git-hosting`, `ticket-management`, `document-storage`.
+
+`kraftwork-local` is always an option for every category as a built-in fallback.
+
+For each category:
+
+- **One provider available** (from discovered plugins): auto-select it, inform the user.
+- **Multiple providers available**: ask the user which to use. List the options by plugin name.
+- **No providers discovered**: auto-select `kraftwork-local`, inform the user.
+
+Always include `kraftwork-local` as an explicit option the user can choose.
+
+## Phase 2 — Provider Configuration
+
+### Step 4: Collect Provider-Specific Config
+
+For each selected provider that is not `kraftwork-local`:
+
+1. Locate its `config/workspace-config.json`:
+
+```sh
+PLUGIN_DIR="$CACHE_DIR/$MARKETPLACE/$PLUGIN_NAME"
+VERSION_DIR=$(ls -1 "$PLUGIN_DIR" | head -1)
+SCHEMA_FILE="$PLUGIN_DIR/$VERSION_DIR/config/workspace-config.json"
+```
+
+2. If the schema exists, present each field to the user using the `prompt` text as conversational guidance and `example` as illustration.
+
+3. Collect responses and store them under `providers.<category>.config` in the final workspace.json.
+
+Field type handling:
+
+- **`string` fields:** Ask and accept a single value.
+- **`boolean` fields:** Ask as a yes/no question.
+- **`string[]` fields:** Accept comma-separated values or one at a time.
+- **Optional fields** (`required: false` or `required` absent): Accept blank/skip. If skipped, omit the field entirely — do not write null.
+
+## Phase 3 — Core Configuration
+
+### Step 5: Collect Workspace Settings
+
+Read the core workspace schema from this skill's plugin root at `config/workspace-config.json`. Prompt for each field defined there:
+
+- `workspace.name` — the workspace name
+- `workspace.path` — the workspace root directory
+
+Infer a smart default for path from the current directory:
+
+```sh
+echo "Current directory: $(pwd)"
+```
+
+## Phase 4 — Scaffold Workspace
+
+### Step 6: Preview and Confirm
+
+Assemble the full workspace.json and show a preview before writing:
+
+```
+Here is the workspace.json that will be written:
+
+{
+  "configVersion": 2,
+  "workspace": { ... },
+  "providers": { ... }
+}
+
+Does this look right?
+```
+
+Wait for confirmation. If the user requests changes, re-prompt for the specific fields they want to adjust.
+
+### Step 7: Write workspace.json
+
+Write workspace.json with `"configVersion": 2` as the first key, at the workspace root path.
+
+### Step 8: Create Directory Structure
+
+```sh
+WORKSPACE=$(jq -r '.workspace.path' workspace.json)
+WORKSPACE="${WORKSPACE/#\~/$HOME}"
+
+# Initialise as git repo if not already one
+git -C "$WORKSPACE" rev-parse --git-dir 2>/dev/null || git init "$WORKSPACE"
+
+mkdir -p "$WORKSPACE/modules"
+mkdir -p "$WORKSPACE/trees"
+
+# .gitignore with trees/ entry
+if [ ! -f "$WORKSPACE/.gitignore" ]; then
+  echo "trees/" > "$WORKSPACE/.gitignore"
+elif ! grep -q "^trees/$" "$WORKSPACE/.gitignore"; then
+  echo "trees/" >> "$WORKSPACE/.gitignore"
+fi
+
+# tasks/ only when using kraftwork-local for ticket management
+TICKET_PROVIDER=$(jq -r '.providers["ticket-management"].plugin // "kraftwork-local"' workspace.json)
+if [ "$TICKET_PROVIDER" = "kraftwork-local" ]; then
+  mkdir -p "$WORKSPACE/tasks"
+fi
+```
+
+Do NOT create `docs/` — it is created lazily by the document storage provider on first use.
+
+## Phase 5 — Clone Repositories
+
+### Step 9: Clone Into modules/
+
+This phase runs only when a non-local git-hosting provider is selected.
+
+Use `resolve-provider.sh` from the scripts directory to check whether the `clone-repo` capability is available:
+
+```sh
+SCRIPTS_DIR="<computed-scripts-dir>"
+GIT_PLUGIN=$(jq -r '.providers["git-hosting"].plugin' workspace.json)
+
+bash "$SCRIPTS_DIR/resolve-provider.sh" "$GIT_PLUGIN" "clone-repo"
+```
+
+If the capability is available, ask the user which repositories to clone. For each repo:
+
+1. Skip if `$WORKSPACE/modules/<repo>` already exists.
+2. Clone and register as a git submodule:
+
+```sh
+git -C "$WORKSPACE" submodule add "<clone-url>" "modules/$REPO"
+```
+
+Derive the clone URL from the provider-specific config collected in Phase 2 (e.g., group/org from the git-hosting config).
+
+If no git-hosting provider is available, skip this phase and inform the user they can clone repos manually into `modules/`.
+
+## Phase 6 — Generate CLAUDE.md
+
+### Step 10: Write Workspace CLAUDE.md
+
+If `$WORKSPACE/CLAUDE.md` does not already exist, generate it with:
+
+- A heading using the workspace name
+- The directory structure (`modules/`, `trees/`, optionally `tasks/`)
+- A brief description of each directory's purpose
+- The provider configuration summary (which plugin is selected per category)
+- A modules table listing any cloned repos
+
+All values must come from workspace.json. Do not hardcode any company name, URLs, or repository names.
+
+## Idempotent Re-run (Delta Mode)
+
+### Step 11: Delta Mode Logic
+
+If `workspace.json` already exists and the user did not pass `--reconfigure`:
+
+1. Read the existing workspace.json.
+2. Check for new `kraftwork-*` plugins that have appeared since the last run by comparing current discovered providers against `providers.<category>.plugin` values in the file.
+3. For each category where a new provider is now available that was not previously selected, offer to switch: "A new provider `<plugin>` is available for `<category>`. Switch from `<current>`?"
+4. For each selected provider, check its `config/workspace-config.json` for required fields absent from `providers.<category>.config`. Prompt only for those missing fields.
+5. Preserve all existing config — only add or update keys. Never remove existing keys or sections.
+
+If nothing is missing or changed, report "Config up to date" and exit.
+
+## Error Handling
+
+- **Missing providers.json:** Skip that plugin silently. It may not declare any providers.
+- **Schema parse failures:** Report the plugin name and file path. Skip that schema and continue.
+- **Directory already exists:** Skip creation, continue.
+- **Clone failures:** Continue with remaining repos. Report all failures at the end.
+- **resolve-provider.sh absent:** Warn the user and skip capability checks. Treat capability as unavailable.
+- **workspace.json write failure:** Report the error and show the JSON that would have been written so the user can save it manually.
+
+## Completion
+
+After all phases, show a summary:
+
+```
+Workspace configured at $WORKSPACE
+
+Providers:
+  git-hosting:        <plugin>
+  ticket-management:  <plugin>
+  document-storage:   <plugin>
+
+Structure:
+  $WORKSPACE/
+  ├── modules/    (<N> repos)
+  ├── trees/      (git worktrees — gitignored)
+  └── tasks/      (local task tracking, if applicable)
+
+Next steps:
+1. cd "$WORKSPACE"
+2. Run /kraft-work TICKET-123 to begin work on a ticket
+3. Run /kraft-sync to update all repos
+```
