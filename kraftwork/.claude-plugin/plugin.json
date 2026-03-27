@@ -1,7 +1,7 @@
 {
   "name": "kraftwork",
-  "version": "2.0.0",
-  "description": "Opinionated developer workflow orchestration: worktree lifecycle, spec-driven planning, and workspace configuration",
+  "version": "3.0.0",
+  "description": "Opinionated developer workflow orchestration with pluggable providers for git hosting, ticket management, and document storage",
   "author": {
     "name": "Filipe Estacio",
     "email": "f.estacio@gmail.com"
