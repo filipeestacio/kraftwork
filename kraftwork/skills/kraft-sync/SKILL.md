@@ -35,7 +35,7 @@ Run the sync script from the scripts directory:
 
 ## What It Does
 
-1. Locates all git repositories in `$WORKSPACE/sources/`
+1. Locates all git repositories in `$WORKSPACE/modules/`
 2. For each repo on main/master with no uncommitted changes:
    - Fetches from origin
    - Fast-forward merges if behind
