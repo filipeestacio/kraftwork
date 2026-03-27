@@ -1,7 +1,7 @@
 {
   "name": "kraftwork-clickup",
-  "version": "2.0.0",
-  "description": "ClickUp task management and team communication for Kraftwork (requires kraftwork core)",
+  "version": "3.0.0",
+  "description": "ClickUp ticket management and document storage provider for Kraftwork (requires kraftwork core)",
   "author": {
     "name": "Filipe Estacio",
     "email": "f.estacio@gmail.com"
