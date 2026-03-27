@@ -1,0 +1,9 @@
+{
+  "name": "kraftwork-CHANGEME",
+  "version": "3.0.0",
+  "description": "CHANGEME provider for Kraftwork",
+  "author": {
+    "name": "Filipe Estacio",
+    "email": "f.estacio@gmail.com"
+  }
+}
