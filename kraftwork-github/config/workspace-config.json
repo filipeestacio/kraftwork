@@ -1,0 +1,14 @@
+{
+  "section": "github",
+  "title": "GitHub Configuration",
+  "description": "GitHub organization or user for API queries",
+  "fields": [
+    {
+      "key": "org",
+      "type": "string",
+      "prompt": "What is your GitHub organization or username?",
+      "example": "my-org",
+      "required": true
+    }
+  ]
+}
