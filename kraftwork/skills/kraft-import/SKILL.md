@@ -1,14 +1,15 @@
 ---
 name: kraft-import
-description: Create worktrees for branches that already exist remotely, useful for continuing work started elsewhere.
+description: Onboard a new repository as a workspace submodule with automatic codebase scanning.
 ---
 
-# Workspace Import - Import Existing Branches
+# Workspace Import - Onboard a Repository as a Submodule
 
-Create worktrees for remote branches that already exist, allowing you to continue work started elsewhere or by a teammate.
+Add a new repository to the workspace as a git submodule, scan its codebase for documentation, and configure the workspace accordingly.
 
 ## Use Cases
 
+- **Onboard a new service:** Add a repo you'll be working on to the workspace
 - **Continue work from another machine:** Started on laptop, continuing on desktop
 - **Pick up abandoned work:** Resume work on an old branch
 - **Collaborate on a branch:** Join work a teammate started
@@ -19,8 +20,7 @@ Create worktrees for remote branches that already exist, allowing you to continu
 | Script | Purpose |
 |--------|---------|
 | `find-workspace.sh` | Locate workspace root |
-| `search-ticket-branches.sh` | Search local/remote branches for ticket |
-| `search-ticket-mrs.sh` | Search GitLab MRs (fallback) |
+| `resolve-provider.sh` | Resolve provider-specific scripts |
 
 ## Script Paths
 
@@ -38,39 +38,47 @@ When you load this skill, note its file path and compute the scripts directory. 
 ```sh
 WORKSPACE=$(<scripts-dir>/find-workspace.sh)
 if [ $? -ne 0 ]; then
-  echo "Workspace not found. Run /kraft-init first."
+  echo "Workspace not found. Run /kraft-config first."
   exit 1
 fi
 echo "Workspace: $WORKSPACE"
 ```
 
-### Step 2: Get Ticket ID
+### Step 2: Resolve Provider Scripts
+
+```sh
+SEARCH_PRS=$(<scripts-dir>/resolve-provider.sh script git-hosting search-prs 2>/dev/null || echo "")
+SEARCH_BRANCHES=$(<scripts-dir>/resolve-provider.sh script git-hosting search-branches 2>/dev/null || echo "")
+CLONE_REPO=$(<scripts-dir>/resolve-provider.sh script git-hosting clone-repo 2>/dev/null || echo "")
+```
+
+### Step 3: Get Ticket or Repository Identifier
 
 If not provided, ask user:
 
 ```
-What Jira ticket do you want to import? (e.g., PROJ-1234)
+What ticket or repository identifier do you want to import? (e.g., PROJ-1234 or a repo URL/name)
 ```
 
-### Step 3: Check for Existing Worktree
+### Step 4: Check for Existing Module
 
 ```sh
-EXISTING=$(find "$WORKSPACE/tasks" -maxdepth 1 -type d -name "${TICKET_ID}-*" 2>/dev/null | head -1)
+EXISTING=$(find "$WORKSPACE/modules" -maxdepth 1 -type d -name "${TICKET_ID}-*" 2>/dev/null | head -1)
 
 if [ -n "$EXISTING" ]; then
-  echo "Worktree already exists: $EXISTING"
+  echo "Module already exists: $EXISTING"
 fi
 ```
 
 If exists, ask user: use existing, or remove and reimport?
 
-### Step 4: Search for Remote Branches
+### Step 5: Search for Remote Branches
 
 ```sh
 echo "Searching for branches matching $TICKET_ID..."
 
-BRANCH_RESULTS=$(<scripts-dir>/search-ticket-branches.sh "$TICKET_ID" "$WORKSPACE")
-BRANCH_COUNT=$(echo "$BRANCH_RESULTS" | jq 'length')
+BRANCH_RESULTS=$($SEARCH_BRANCHES "$TICKET_ID" "$WORKSPACE" 2>/dev/null)
+BRANCH_COUNT=$(echo "$BRANCH_RESULTS" | jq 'length' 2>/dev/null || echo "0")
 
 if [ "$BRANCH_COUNT" -gt 0 ]; then
   echo "Found $BRANCH_COUNT matching branches:"
@@ -78,28 +86,28 @@ if [ "$BRANCH_COUNT" -gt 0 ]; then
 fi
 ```
 
-### Step 5: GitLab MR Search (Fallback)
+### Step 6: PR Search (Fallback)
 
 If no branches found:
 
 ```sh
-if [ "$BRANCH_COUNT" -eq 0 ]; then
-  echo "No local branches found. Searching GitLab MRs..."
+if [ "$BRANCH_COUNT" -eq 0 ] && [ -n "$SEARCH_PRS" ]; then
+  echo "No local branches found. Searching PRs..."
 
-  MR_RESULTS=$(<scripts-dir>/search-ticket-mrs.sh "$TICKET_ID")
-  MR_COUNT=$(echo "$MR_RESULTS" | jq 'length')
+  PR_RESULTS=$($SEARCH_PRS "$TICKET_ID" 2>/dev/null)
+  PR_COUNT=$(echo "$PR_RESULTS" | jq 'length' 2>/dev/null || echo "0")
 
-  if [ "$MR_COUNT" -gt 0 ]; then
-    echo "Found MRs:"
-    echo "$MR_RESULTS" | jq -r '.[] | "  \(.repo) - \(.title) [\(.state)]"'
+  if [ "$PR_COUNT" -gt 0 ]; then
+    echo "Found PRs:"
+    echo "$PR_RESULTS" | jq -r '.[] | "  \(.repo) - \(.title) [\(.state)]"'
   else
-    echo "No branches or MRs found for $TICKET_ID"
+    echo "No branches or PRs found for $TICKET_ID"
     exit 1
   fi
 fi
 ```
 
-### Step 6: Select Branch to Import
+### Step 7: Select Branch to Import
 
 If multiple branches found, use AskUserQuestion:
 
@@ -114,27 +122,57 @@ Which would you like to import?
 
 Options: list branches, or "All" for multi-repo tickets.
 
-### Step 7: Create Worktree Tracking Remote
+### Step 8: Clone and Add as Submodule
 
 ```sh
 REPO_NAME="$SELECTED_REPO"
 BRANCH_NAME="$SELECTED_BRANCH"
-REPO_PATH="$WORKSPACE/sources/$REPO_NAME"
-TASK_DIR="$WORKSPACE/tasks/$BRANCH_NAME"
+MODULE_DIR="$WORKSPACE/modules/$REPO_NAME"
 
-cd "$REPO_PATH"
+# Clone repo if not already present
+if [ ! -d "$MODULE_DIR" ]; then
+  git -C "$WORKSPACE" submodule add <url> "modules/$REPO_NAME"
+  echo "Added submodule: modules/$REPO_NAME"
+fi
 
-# Ensure branch is fetched
-git fetch origin "$BRANCH_NAME"
+# Fetch and checkout the branch
+git -C "$MODULE_DIR" fetch origin "$BRANCH_NAME"
+git -C "$MODULE_DIR" checkout --track "origin/$BRANCH_NAME"
 
-# Create worktree tracking the remote branch
-git worktree add --track -b "$BRANCH_NAME" "$TASK_DIR" "origin/$BRANCH_NAME"
+echo "Checked out: $BRANCH_NAME"
+```
 
-echo "Created worktree: $TASK_DIR"
+### Step 9: Create Worktree
+
+```sh
+TREE_DIR="$WORKSPACE/trees/$BRANCH_NAME"
+
+git -C "$MODULE_DIR" worktree add --track -b "$BRANCH_NAME" "$TREE_DIR" "origin/$BRANCH_NAME"
+
+echo "Created worktree: $TREE_DIR"
 echo "Tracking: origin/$BRANCH_NAME"
 ```
 
-### Step 8: Setup Spec Directory
+### Step 10: Scan Repository Documentation
+
+Scan the newly added module for documentation and project context:
+
+```sh
+DOCS_FOUND=""
+
+for doc in README.md docs/ CLAUDE.md AGENTS.md; do
+  if [ -e "$MODULE_DIR/$doc" ]; then
+    DOCS_FOUND="$DOCS_FOUND $doc"
+    echo "Found: $doc"
+  fi
+done
+```
+
+Read any found documentation files and summarise their content. Then suggest additions to `$WORKSPACE/CLAUDE.md` based on what was found — for example: repo-specific conventions, tech stack notes, local dev setup commands, or key architectural patterns.
+
+Ask the user whether to apply the suggested additions before writing anything.
+
+### Step 11: Setup Spec Directory
 
 ```sh
 SPEC_DIR="$WORKSPACE/docs/specs/$TICKET_ID"
@@ -162,33 +200,35 @@ else
 fi
 ```
 
-### Step 9: Output Completion
+### Step 12: Output Completion
 
 ```
-Imported worktree for $TICKET_ID
+Imported $REPO_NAME for $TICKET_ID
 
-Worktree: $TASK_DIR
+Submodule: modules/$REPO_NAME
+Worktree: $TREE_DIR
 Branch: $BRANCH_NAME (tracking origin/$BRANCH_NAME)
 Specs: $SPEC_DIR
 
 Branch status:
-$(git -C "$TASK_DIR" log --oneline -5)
+$(git -C "$TREE_DIR" log --oneline -5)
 
 Next steps:
-1. cd "$TASK_DIR"
+1. cd "$TREE_DIR"
 2. Review current state: git log --oneline -10
-3. Continue development or run /kraft-plan if starting fresh
+3. Continue development or run /kraft-work if starting fresh
 ```
 
 ## Error Handling
 
-- **No branches found:** Offer GitLab MR search
+- **No branches found:** Try PR search via resolved provider script
 - **Branch already exists locally:** Ask if user wants to reset to remote
 - **Worktree exists:** Offer to use existing or reimport
-- **Fetch failed:** Check network/auth, suggest `glab auth status`
+- **Fetch failed:** Check network and authentication with your git hosting provider; run /kraft-config to reconfigure if needed
 
 ## Notes
 
-- Import creates a tracking branch (upstream set to origin)
+- Import adds the repo as a git submodule under `modules/`
+- The worktree is created under `trees/` tracking the remote branch
 - Local changes can be pushed with `git push`
 - If branch was rebased remotely, may need `git pull --rebase`
