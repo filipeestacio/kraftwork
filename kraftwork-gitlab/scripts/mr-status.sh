@@ -53,7 +53,11 @@ jq -n \
   --argjson pipelines "$PIPELINES_JSON" \
   --argjson jobs "$JOBS_JSON" \
   --argjson discussions "$DISCUSSIONS_JSON" \
-  '{
+  '[ $discussions[]
+     | select(.notes[0].resolvable == true)
+     | select(.notes[0].resolved != true)
+   ] as $unresolved_threads |
+  {
     mr: {
       iid: $mr.iid,
       state: $mr.state,
@@ -89,36 +93,25 @@ jq -n \
     ),
     threads: {
       unresolved: [
-        $discussions[]
-        | select(.notes[0].resolvable == true)
-        | select(.notes[-1].resolved != true)
-        | {
-            id: .id,
-            author: .notes[0].author.username,
-            body: .notes[0].body,
-            file: (.notes[0].position.new_path // null),
-            line: (.notes[0].position.new_line // null),
-            created_at: .notes[0].created_at
-          }
+        $unresolved_threads[] | {
+          id: .id,
+          author: .notes[0].author.username,
+          body: .notes[0].body,
+          file: (.notes[0].position.new_path // null),
+          line: (.notes[0].position.new_line // null),
+          created_at: .notes[0].created_at
+        }
       ],
       count: {
         total: ($discussions | length),
-        unresolved: (
-          [ $discussions[]
-            | select(.notes[0].resolvable == true)
-            | select(.notes[-1].resolved != true)
-          ] | length
-        )
+        unresolved: ($unresolved_threads | length)
       }
     },
     ready_to_merge: (
       ($pipelines | length) > 0
       and $pipelines[0].status == "success"
       and ($approvals.approved // false)
-      and ([ $discussions[]
-             | select(.notes[0].resolvable == true)
-             | select(.notes[-1].resolved != true)
-           ] | length) == 0
+      and ($unresolved_threads | length) == 0
       and ($mr.merge_status == "can_be_merged")
       and ($mr.has_conflicts | not)
     ),
