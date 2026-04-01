@@ -12,7 +12,23 @@ Analyze a completed ticket end-to-end — from plan through merge — and captur
 | Script | Purpose |
 |--------|---------|
 | `find-workspace.sh` | Locate workspace root |
-| `resolve-provider.sh` | Delegate to the configured git-hosting provider |
+
+## Provider Skills Used
+
+| Category | Skill | Purpose |
+|---|---|---|
+| git-hosting | find | Search for merged PRs/MRs by ticket ID |
+| git-hosting | describe | Fetch PR/MR details, discussions, diff, commits |
+| memory | memorize | Store key learnings from the retrospective |
+
+## Provider Skill Resolution
+
+To invoke a provider skill:
+
+1. Read `workspace.json` at the workspace root
+2. Look up the provider: `jq -r '.providers["<category>"]' workspace.json`
+3. Construct: `{provider}:{category}-{skill}`
+4. Invoke via the Skill tool
 
 ## Script Paths
 
@@ -57,16 +73,9 @@ Read each file that exists using the Read tool. Missing artifacts are noted as g
 
 ### Step 3: Find Merge Requests
 
-Use the configured git-hosting provider via provider delegation:
+If git-hosting is configured in workspace.json, invoke `{git-hosting}:git-hosting-find` with the ticket ID to search for PRs/MRs.
 
-```sh
-SEARCH_PRS=$(<scripts-dir>/resolve-provider.sh script git-hosting search-prs 2>/dev/null || echo "")
-if [ -n "$SEARCH_PRS" ]; then
-  MRS=$("$SEARCH_PRS" "$TICKET_ID")
-fi
-```
-
-If no git-hosting provider is configured or search-prs is unavailable, proceed with local artifacts only.
+If git-hosting is not configured, proceed with local artifacts only.
 
 If no MRs are found, inform the user and ask whether to proceed with local artifacts only via AskUserQuestion.
 
@@ -88,18 +97,7 @@ MR_TITLE=$(echo "$MR" | jq -r '.title')
 
 ### Step 4: Gather MR Data
 
-Fetch MR details, discussions, diff, and commits via provider delegation:
-
-```sh
-FETCH_PR=$(<scripts-dir>/resolve-provider.sh script git-hosting fetch-pr-details 2>/dev/null || echo "")
-if [ -n "$FETCH_PR" ]; then
-  PR_DATA=$("$FETCH_PR" "$IID")
-  MR_DETAILS=$(echo "$PR_DATA" | jq '.details')
-  MR_DISCUSSIONS=$(echo "$PR_DATA" | jq '.discussions')
-  MR_CHANGES=$(echo "$PR_DATA" | jq '.changes')
-  MR_COMMITS=$(echo "$PR_DATA" | jq '.commits')
-fi
-```
+Invoke `{git-hosting}:git-hosting-describe` with the selected MR identifier to fetch details, discussions, changes, and commits.
 
 Extract key data points:
 
@@ -235,21 +233,9 @@ Write the retrospective to `$WORKSPACE/docs/lessons/$TICKET_ID-retro.md` using t
 
 Extract 1-3 concrete learnings from the analysis. Each learning should be a single actionable insight, not a vague observation.
 
-For each learning, run:
-```sh
-bun run ~/.claude/kraftwork-intel/src/cli.ts store \
-  --category "<architecture|pattern|convention|debugging>" \
-  --project "<repo-name>" \
-  --content "<1-3 sentence learning>"
-```
+If memory is configured in workspace.json, invoke `{memory}:memory-memorize` for each learning, providing the category (architecture, pattern, convention, or debugging), project name, and content.
 
-If the kraftwork-intel CLI is not installed or the store command fails, skip this step and note "Intel-store: unavailable" in the output.
-
-Choose the category that best fits each learning:
-- **architecture** — structural decisions, service boundaries, data flow
-- **pattern** — reusable code patterns, testing approaches
-- **convention** — team norms, style, naming
-- **debugging** — troubleshooting techniques, failure modes
+If memory is not configured, skip this step and note "Memory provider: unavailable" in the output.
 
 ### Step 9: Present Reflection Questions
 
@@ -267,4 +253,4 @@ Present the questions to the user. User answers are not captured — the questio
 3. **No local artifacts** — Proceed with MR data only. The Plan vs Reality section becomes "No plan artifacts found — this is itself an observation."
 4. **Multiple MRs** — Analyze the primary MR in depth. List others in the Artifacts section with their URLs.
 5. **Large diffs** — For MRs with >500 changed lines, summarize by file (path + lines added/removed) instead of reading full diffs. Focus qualitative analysis on the files most discussed in review threads.
-6. **No git-hosting provider** — If `resolve-provider.sh` returns empty or errors, skip all MR fetching and proceed with local artifacts only. Note "Git-hosting provider: unavailable" in the output.
+6. **No git-hosting provider** — If git-hosting is not configured in workspace.json, skip all MR fetching and proceed with local artifacts only. Note "Git-hosting provider: unavailable" in the output.
