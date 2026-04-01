@@ -1,5 +1,5 @@
 ---
-name: jira-search
+name: ticket-management-find
 description: Use when searching for Jira tickets — finding your open tickets, browsing the current sprint, filtering by status, viewing the kanban board for top priorities, or running custom JQL queries
 ---
 

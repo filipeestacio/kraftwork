@@ -1,5 +1,5 @@
 ---
-name: jira-ticket
+name: ticket-management-describe
 description: Use when working with a specific Jira ticket — viewing details, transitioning status, adding comments, editing fields, or creating new tickets
 ---
 
