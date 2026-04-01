@@ -12,12 +12,34 @@ Unified entry point for all worktree-based work. Routes to the right flow based 
 | Script | Purpose |
 |--------|---------|
 | `find-workspace.sh` | Locate workspace root |
-| `resolve-provider.sh` | Resolve provider capabilities |
 | `worktree-status.sh` | Get detailed status for all worktrees (JSON) |
 | `create-worktree.sh` | Create the worktree |
 | `list-repos.sh` | List available repositories |
 | `stack-metadata.sh` | Read stack metadata for split worktrees |
 | `safety-check.sh` | Check for uncommitted changes |
+
+## Provider Skills Used
+
+This skill invokes provider skills via workspace.json resolution. See Provider Skill Resolution below.
+
+| Category | Skill | Purpose |
+|---|---|---|
+| git-hosting | find | Search for existing PRs and branches by ticket ID |
+| git-hosting | import | Clone a repository into the workspace |
+| ticket-management | describe | Fetch ticket details (summary, description) |
+
+## Provider Skill Resolution
+
+To invoke a provider skill:
+
+1. Read `workspace.json` at the workspace root
+2. Look up the provider for the needed category: `jq -r '.providers["<category>"]' workspace.json`
+   - If the category is not configured, inform the user and suggest `/kraft-config`
+   - Handle both string format (`"kraftwork-gitlab"`) and legacy object format (`{"plugin": "kraftwork-gitlab"}`)
+3. Construct the qualified skill name: `{provider}:{category}-{skill}`
+4. Invoke via the Skill tool
+
+Example: to find PRs, read `providers["git-hosting"]` → `kraftwork-gitlab` → invoke `kraftwork-gitlab:git-hosting-find`
 
 ## Config Files
 
@@ -91,23 +113,15 @@ Use a 3-step strategy:
 
 **C3a: Search for existing MRs/PRs via provider**
 
-```sh
-SEARCH_PRS=$(<scripts-dir>/resolve-provider.sh script git-hosting search-prs)
-if [ $? -eq 0 ]; then
-  PR_RESULTS=$(bash "$SEARCH_PRS" "$TICKET_ID")
-  REPO_FROM_PR=$(echo "$PR_RESULTS" | jq -r '.[0].repo // empty')
-fi
-```
+Resolve the git-hosting provider from workspace.json. If configured, invoke `{git-hosting}:git-hosting-find` with the ticket ID to search for existing PRs/MRs. The skill returns matching PRs with repo information.
+
+If git-hosting is not configured in workspace.json, skip this step.
 
 **C3b: Search for existing branches via provider**
 
-```sh
-SEARCH_BRANCHES=$(<scripts-dir>/resolve-provider.sh script git-hosting search-branches)
-if [ $? -eq 0 ]; then
-  BRANCH_RESULTS=$(bash "$SEARCH_BRANCHES" "$TICKET_ID")
-  REPO_FROM_BRANCH=$(echo "$BRANCH_RESULTS" | jq -r '.[0].repo // empty')
-fi
-```
+If C3a didn't find a match, invoke `{git-hosting}:git-hosting-find` again, requesting a branch search for the ticket ID. The find skill handles both PR and branch searches.
+
+If git-hosting is not configured, skip this step.
 
 **C3c: Ask user**
 
@@ -125,30 +139,23 @@ Use AskUserQuestion with the list of repos.
 
 ```sh
 REPO_PATH="$WORKSPACE/modules/$REPO_NAME"
-if [ ! -d "$REPO_PATH" ]; then
-  echo "Repository not cloned. Cloning..."
-  CLONE_SCRIPT=$(<scripts-dir>/resolve-provider.sh script git-hosting clone-repo)
-  if [ $? -ne 0 ]; then
-    echo "ERROR: Git hosting provider not configured. Run /kraft-config to set up."
-    exit 1
-  fi
-  bash "$CLONE_SCRIPT" "$REPO_NAME" "$REPO_PATH"
-fi
+```
+
+If the repo directory doesn't exist and git-hosting is configured, invoke `{git-hosting}:git-hosting-import` with the repo name and target path `$WORKSPACE/modules/$REPO_NAME`.
+
+If git-hosting is not configured:
+```
+ERROR: Repository not found and no git hosting provider configured. Run /kraft-config to set up, or clone manually into modules/.
 ```
 
 ### C5: Fetch Ticket Details
 
-```sh
-FETCH_TICKET=$(<scripts-dir>/resolve-provider.sh script ticket-management fetch-ticket)
-if [ $? -eq 0 ]; then
-  TICKET_JSON=$(bash "$FETCH_TICKET" "$TICKET_ID" 2>/dev/null || echo "{}")
-  SUMMARY=$(echo "$TICKET_JSON" | jq -r '.summary // empty')
-fi
+If ticket-management is configured in workspace.json, invoke `{ticket-management}:ticket-management-describe` with the ticket ID to fetch the summary and description.
 
-if [ -z "$SUMMARY" ]; then
-  # Ticket provider unavailable — ask user directly
-  echo "Could not fetch ticket summary. Please provide a short description:"
-fi
+If ticket-management is not configured or the skill returns no data:
+
+```
+Could not fetch ticket summary. Please provide a short description:
 ```
 
 ### C6: Generate Branch Name
@@ -351,18 +358,13 @@ If the selected worktree has stack metadata, detect the stack state and offer ac
 | Situation | Detection | Action |
 |-----------|-----------|--------|
 | MR1 changed, MR2 stale | MR1 HEAD differs from MR2's merge base (`git merge-base <MR1-branch> <MR2-branch>` vs MR1 HEAD) | "MR1 has new commits. Rebase MR2?" → `cd <MR2> && git rebase <MR1-branch> && git push --force-with-lease` |
-| MR1 merged | PR status check via `resolve-provider.sh` returns merged | "MR1 merged. Promote MR2 to target main?" → `cd <MR2> && git fetch origin && git rebase --onto origin/main <MR1-branch> && git push --force-with-lease`, then update MR target branch via provider, then update metadata |
+| MR1 merged | PR status check via `{git-hosting}:git-hosting-describe` returns merged state | "MR1 merged. Promote MR2 to target main?" → `cd <MR2> && git fetch origin && git rebase --onto origin/main <MR1-branch> && git push --force-with-lease`, then update MR target branch via provider, then update metadata |
 | Both merged | Both PRs show merged state | "Stack complete. Archive worktrees?" → suggest `/kraft-archive` for both |
 | MR1 has review feedback | MR1 open with unresolved discussions | "MR1 has review feedback" → suggest resuming MR1 |
 
 Check PR status via provider:
 
-```sh
-SEARCH_PRS=$(<scripts-dir>/resolve-provider.sh script git-hosting search-prs)
-if [ $? -ne 0 ]; then
-  echo "Git hosting provider unavailable — skipping PR status check"
-fi
-```
+Invoke `{git-hosting}:git-hosting-find` to check PR status for the stack's branches.
 
 After sync or promote operations, update `.stack-metadata.json` via:
 
@@ -444,16 +446,12 @@ If uncommitted changes, use AskUserQuestion:
 
 ### S4: Fetch Ticket Details
 
-```sh
-FETCH_TICKET=$(<scripts-dir>/resolve-provider.sh script ticket-management fetch-ticket)
-if [ $? -eq 0 ]; then
-  TICKET_JSON=$(bash "$FETCH_TICKET" "$NEW_TICKET_ID" 2>/dev/null || echo "{}")
-  SUMMARY=$(echo "$TICKET_JSON" | jq -r '.summary // empty')
-fi
+If ticket-management is configured in workspace.json, invoke `{ticket-management}:ticket-management-describe` with the ticket ID to fetch the summary and description.
 
-if [ -z "$SUMMARY" ]; then
-  echo "Could not fetch ticket summary. Please provide a short description:"
-fi
+If ticket-management is not configured or the skill returns no data:
+
+```
+Could not fetch ticket summary. Please provide a short description:
 ```
 
 ### S5: Generate Branch Name
