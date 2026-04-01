@@ -1,0 +1,6 @@
+{
+  "category": "ci",
+  "skills": {
+    "required": ["find", "describe", "watch", "fix", "retry", "trigger"]
+  }
+}

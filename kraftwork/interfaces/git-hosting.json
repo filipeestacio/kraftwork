@@ -1,0 +1,6 @@
+{
+  "category": "git-hosting",
+  "skills": {
+    "required": ["find", "describe", "import", "request-review", "review"]
+  }
+}

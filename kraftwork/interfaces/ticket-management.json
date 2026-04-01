@@ -1,0 +1,6 @@
+{
+  "category": "ticket-management",
+  "skills": {
+    "required": ["find", "describe", "create", "update"]
+  }
+}

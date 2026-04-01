@@ -1,0 +1,6 @@
+{
+  "category": "messaging",
+  "skills": {
+    "required": ["find", "describe", "notify"]
+  }
+}
