@@ -14,7 +14,22 @@ Split a completed implementation branch into two stacked PRs based on the plan's
 | `find-workspace.sh` | Locate workspace root |
 | `safety-check.sh` | Check for uncommitted/unpushed changes |
 | `stack-metadata.sh` | Read/write `.stack-metadata.json` for stacked worktrees |
-| `resolve-provider.sh` | Resolve git hosting provider scripts |
+
+## Provider Skills Used
+
+| Category | Skill | Purpose |
+|---|---|---|
+| git-hosting | request-review | Create PRs for split branches |
+| git-hosting | find | Look up created PR numbers |
+
+## Provider Skill Resolution
+
+To invoke a provider skill:
+
+1. Read `workspace.json` at the workspace root
+2. Look up the provider: `jq -r '.providers["<category>"]' workspace.json`
+3. Construct: `{provider}:{category}-{skill}`
+4. Invoke via the Skill tool
 
 ## Script Paths
 
@@ -36,14 +51,18 @@ These are guidelines, not hard rules. A 250-line MR that's all test code is fine
 
 ### Step 1: Validate Environment
 
+Check that git-hosting is configured in workspace.json:
+
 ```sh
-# Gate on provider capability before doing any work
-<scripts-dir>/resolve-provider.sh has git-hosting create-pr || {
+GIT_PROVIDER=$(jq -r '.providers["git-hosting"] // empty' "$WORKSPACE_JSON")
+if [ -z "$GIT_PROVIDER" ]; then
   echo "kraft-split requires a git hosting provider with PR creation capability."
   echo "Configure a git hosting provider via /kraft-config."
   exit 1
-}
+fi
+```
 
+```sh
 WORKTREE_PATH=$(git rev-parse --show-toplevel 2>/dev/null)
 
 case "$WORKTREE_PATH" in
@@ -245,36 +264,19 @@ fi
 
 #### 5b.8: Push and Create PRs
 
-{{git-hosting:pr-description-guide}}
-
 ```sh
 cd "$MR1_DIR" && git push -u origin "$MR1_BRANCH"
 cd "$MR2_DIR" && git push -u origin "$MR2_BRANCH"
-
-# Resolve the PR creation script via provider delegation
-CREATE_PR=$(<scripts-dir>/resolve-provider.sh script git-hosting create-pr) || {
-  echo "kraft-split requires a git hosting provider with PR creation capability."
-  exit 1
-}
-
-# Create PR1 targeting main
-cd "$MR1_DIR"
-TITLE="$TICKET_ID <MR1 description>"
-BODY="..."
-"$CREATE_PR" "$MR1_BRANCH" "main" "$TITLE" "$BODY"
-
-# Get PR1 number
-SEARCH_PRS=$(<scripts-dir>/resolve-provider.sh script git-hosting search-prs)
-MR1_NUM=$("$SEARCH_PRS" "$MR1_BRANCH" | jq '.[0].number')
-
-# Create PR2 targeting MR1's branch
-cd "$MR2_DIR"
-TITLE2="$TICKET_ID <MR2 description>"
-BODY2="... Stacked on #$MR1_NUM. Merge #$MR1_NUM first, then promote this PR via /kraft-work ..."
-"$CREATE_PR" "$MR2_BRANCH" "$MR1_BRANCH" "$TITLE2" "$BODY2"
-
-MR2_NUM=$("$SEARCH_PRS" "$MR2_BRANCH" | jq '.[0].number')
 ```
+
+After pushing both branches, invoke provider skills to create PRs:
+
+1. Invoke `{git-hosting}:git-hosting-request-review` for MR1: branch `$MR1_BRANCH`, target `main`, with title and body
+2. Invoke `{git-hosting}:git-hosting-find` to look up the created PR number for MR1
+3. Invoke `{git-hosting}:git-hosting-request-review` for MR2: branch `$MR2_BRANCH`, target `$MR1_BRANCH`, with title, body, and stacking note
+4. Invoke `{git-hosting}:git-hosting-find` to look up the created PR number for MR2
+
+The request-review skill handles PR description formatting internally.
 
 #### 5b.9: Update Metadata with PR Numbers
 
@@ -322,5 +324,5 @@ Merge order: #$MR1_NUM first, then promote #$MR2_NUM via /kraft-work
 
 - **Not in worktree:** Guide to `/kraft-work`
 - **Workspace not found:** Guide to `/kraft-config`
-- **Provider not configured or missing capability:** Guide to configure a git hosting provider via `/kraft-config`
+- **git-hosting not configured — guide to `/kraft-config`**
 - **Cross-boundary commit detected:** STOP, report details, ask user to fix
