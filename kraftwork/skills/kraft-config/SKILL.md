@@ -76,17 +76,29 @@ Parse each `providers.json` and collect provider declarations grouped by categor
 
 ### Step 3: Select Providers Per Category
 
-The three categories are: `git-hosting`, `ticket-management`, `document-storage`.
+The six categories are: `git-hosting`, `ci`, `ticket-management`, `document-storage`, `memory`, `messaging`.
 
-`kraftwork-local` is always an option for every category as a built-in fallback.
+Each category has different fallback behaviour when the user has no external provider:
+
+| Category | Local fallback | Fallback provider |
+|---|---|---|
+| `ticket-management` | Full — markdown files in workspace | `kraftwork-local` |
+| `document-storage` | Full — filesystem under workspace | `kraftwork-local` |
+| `memory` | Degraded — markdown files, grep-based recall | `kraftwork-local` |
+| `ci` | Partial — local test/build commands | `kraftwork-local` |
+| `git-hosting` | None — category skipped | (omitted from workspace.json) |
+| `messaging` | None — category skipped | (omitted from workspace.json) |
 
 For each category:
 
 - **One provider available** (from discovered plugins): auto-select it, inform the user.
 - **Multiple providers available**: ask the user which to use. List the options by plugin name.
-- **No providers discovered**: auto-select `kraftwork-local`, inform the user.
+- **No providers discovered + fallback exists**: offer `kraftwork-local` or skip. Explain what the local fallback provides.
+- **No providers discovered + no fallback**: inform the user the category will be skipped. The orchestrator degrades gracefully.
+- **User says "I don't have one" + fallback exists**: auto-select `kraftwork-local`.
+- **User says "I don't have one" + no fallback**: skip the category.
 
-Always include `kraftwork-local` as an explicit option the user can choose.
+Always include `kraftwork-local` as an explicit option for categories that support it.
 
 ## Phase 2 — Provider Configuration
 
@@ -104,7 +116,7 @@ SCHEMA_FILE="$PLUGIN_DIR/$VERSION_DIR/config/workspace-config.json"
 
 2. If the schema exists, present each field to the user using the `prompt` text as conversational guidance and `example` as illustration.
 
-3. Collect responses and store them under `providers.<category>.config` in the final workspace.json.
+3. Collect responses and store them internally — provider config is handled by the extension, not written to workspace.json.
 
 Field type handling:
 
@@ -138,19 +150,27 @@ Assemble the full workspace.json and show a preview before writing:
 Here is the workspace.json that will be written:
 
 {
-  "configVersion": 2,
+  "configVersion": 3,
   "workspace": { ... },
-  "providers": { ... }
+  "providers": {
+    "git-hosting": "kraftwork-gitlab",
+    "ci": "kraftwork-local",
+    "ticket-management": "kraftwork-jira",
+    "document-storage": "kraftwork-local",
+    "memory": "kraftwork-local"
+  }
 }
 
 Does this look right?
 ```
 
+Categories not configured will be omitted from the providers object.
+
 Wait for confirmation. If the user requests changes, re-prompt for the specific fields they want to adjust.
 
 ### Step 7: Write workspace.json
 
-Write workspace.json with `"configVersion": 2` as the first key, at the workspace root path.
+Write workspace.json with `"configVersion": 3` as the first key, at the workspace root path. The `providers` object maps each configured category to its plugin name as a plain string. Omit unconfigured categories entirely.
 
 ### Step 8: Create Directory Structure
 
@@ -170,12 +190,6 @@ if [ ! -f "$WORKSPACE/.gitignore" ]; then
 elif ! grep -q "^trees/$" "$WORKSPACE/.gitignore"; then
   echo "trees/" >> "$WORKSPACE/.gitignore"
 fi
-
-# tasks/ only when using kraftwork-local for ticket management
-TICKET_PROVIDER=$(jq -r '.providers["ticket-management"].plugin // "kraftwork-local"' workspace.json)
-if [ "$TICKET_PROVIDER" = "kraftwork-local" ]; then
-  mkdir -p "$WORKSPACE/tasks"
-fi
 ```
 
 Do NOT create `docs/` — it is created lazily by the document storage provider on first use.
@@ -190,7 +204,7 @@ Use `resolve-provider.sh` from the scripts directory to check whether the `clone
 
 ```sh
 SCRIPTS_DIR="<computed-scripts-dir>"
-GIT_PLUGIN=$(jq -r '.providers["git-hosting"].plugin' workspace.json)
+GIT_PLUGIN=$(jq -r '.providers["git-hosting"]' workspace.json)
 
 bash "$SCRIPTS_DIR/resolve-provider.sh" "$GIT_PLUGIN" "clone-repo"
 ```
@@ -215,7 +229,7 @@ If no git-hosting provider is available, skip this phase and inform the user the
 If `$WORKSPACE/CLAUDE.md` does not already exist, generate it with:
 
 - A heading using the workspace name
-- The directory structure (`modules/`, `trees/`, optionally `tasks/`)
+- The directory structure (`modules/`, `trees/`, `docs/`)
 - A brief description of each directory's purpose
 - The provider configuration summary (which plugin is selected per category)
 - A modules table listing any cloned repos
@@ -229,9 +243,9 @@ All values must come from workspace.json. Do not hardcode any company name, URLs
 If `workspace.json` already exists and the user did not pass `--reconfigure`:
 
 1. Read the existing workspace.json.
-2. Check for new `kraftwork-*` plugins that have appeared since the last run by comparing current discovered providers against `providers.<category>.plugin` values in the file.
+2. Check for new `kraftwork-*` plugins that have appeared since the last run by comparing current discovered providers against `providers.<category>` values in the file.
 3. For each category where a new provider is now available that was not previously selected, offer to switch: "A new provider `<plugin>` is available for `<category>`. Switch from `<current>`?"
-4. For each selected provider, check its `config/workspace-config.json` for required fields absent from `providers.<category>.config`. Prompt only for those missing fields.
+4. For each selected provider, check its `config/workspace-config.json` for any configuration changes needed.
 5. Preserve all existing config — only add or update keys. Never remove existing keys or sections.
 
 If nothing is missing or changed, report "Config up to date" and exit.
@@ -253,15 +267,15 @@ After all phases, show a summary:
 Workspace configured at $WORKSPACE
 
 Providers:
-  git-hosting:        <plugin>
-  ticket-management:  <plugin>
-  document-storage:   <plugin>
+  <category>:  <plugin>   (one line per configured category)
+
+Skipped: <comma-separated list of unconfigured categories, or "none">
 
 Structure:
   $WORKSPACE/
   ├── modules/    (<N> repos)
   ├── trees/      (git worktrees — gitignored)
-  └── tasks/      (local task tracking, if applicable)
+  └── docs/       (created on first use by document storage provider)
 
 Next steps:
 1. cd "$WORKSPACE"
