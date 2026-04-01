@@ -100,6 +100,26 @@ For each category:
 
 Always include `kraftwork-local` as an explicit option for categories that support it.
 
+## Phase 1.5 — Dependency Validation
+
+### Step 3.5: Check Required Dependencies
+
+Kraftwork requires the `superpowers` plugin. Check that it is installed and enabled:
+
+```sh
+SUPERPOWERS_INSTALLED=$(echo "$ENABLED_PLUGINS" | grep -c "^superpowers@" || true)
+
+if [ "$SUPERPOWERS_INSTALLED" -eq 0 ]; then
+  echo "WARNING: The 'superpowers' plugin is required by Kraftwork but is not installed."
+  echo "Install it with: claude plugin install superpowers"
+  echo ""
+  echo "Kraftwork uses superpowers for brainstorming, planning, TDD, and debugging workflows."
+  echo "You can continue setup, but orchestrator skills will not function correctly without it."
+fi
+```
+
+Warn but do not block — the user may install it later.
+
 ## Phase 2 — Provider Configuration
 
 ### Step 4: Collect Provider-Specific Config
