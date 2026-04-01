@@ -218,29 +218,18 @@ Do NOT create `docs/` — it is created lazily by the document storage provider 
 
 ### Step 9: Clone Into modules/
 
-This phase runs only when a non-local git-hosting provider is selected.
-
-Use `resolve-provider.sh` from the scripts directory to check whether the `clone-repo` capability is available:
+This phase runs only when git-hosting is configured in workspace.json.
 
 ```sh
-SCRIPTS_DIR="<computed-scripts-dir>"
-GIT_PLUGIN=$(jq -r '.providers["git-hosting"]' workspace.json)
-
-bash "$SCRIPTS_DIR/resolve-provider.sh" "$GIT_PLUGIN" "clone-repo"
+GIT_PROVIDER=$(jq -r '.providers["git-hosting"] // empty' workspace.json)
 ```
 
-If the capability is available, ask the user which repositories to clone. For each repo:
+If configured, ask the user which repositories to clone. For each repo:
 
 1. Skip if `$WORKSPACE/modules/<repo>` already exists.
-2. Clone and register as a git submodule:
+2. Invoke `{git-hosting}:git-hosting-import` with the repo name and target path `$WORKSPACE/modules/<repo>`.
 
-```sh
-git -C "$WORKSPACE" submodule add "<clone-url>" "modules/$REPO"
-```
-
-Derive the clone URL from the provider-specific config collected in Phase 2 (e.g., group/org from the git-hosting config).
-
-If no git-hosting provider is available, skip this phase and inform the user they can clone repos manually into `modules/`.
+If no git-hosting provider is configured, skip this phase and inform the user they can clone repos manually into `modules/`.
 
 ## Phase 6 — Generate CLAUDE.md
 
@@ -281,7 +270,6 @@ If nothing is missing or changed, report "Config up to date" and exit.
 - **Schema parse failures:** Report the plugin name and file path. Skip that schema and continue.
 - **Directory already exists:** Skip creation, continue.
 - **Clone failures:** Continue with remaining repos. Report all failures at the end.
-- **resolve-provider.sh absent:** Warn the user and skip capability checks. Treat capability as unavailable.
 - **workspace.json write failure:** Report the error and show the JSON that would have been written so the user can save it manually.
 
 ## Completion
