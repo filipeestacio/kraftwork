@@ -28,7 +28,12 @@ if [ ! -f "$WORKSPACE_JSON" ]; then
   exit 1
 fi
 
-PLUGIN_NAME=$(jq -r --arg cat "$CATEGORY" '.providers[$cat].plugin // empty' "$WORKSPACE_JSON")
+PLUGIN_NAME=$(jq -r --arg cat "$CATEGORY" '
+  .providers[$cat] |
+  if type == "string" then .
+  elif type == "object" then .plugin // empty
+  else empty end
+' "$WORKSPACE_JSON")
 if [ -z "$PLUGIN_NAME" ]; then
   exit 1
 fi
