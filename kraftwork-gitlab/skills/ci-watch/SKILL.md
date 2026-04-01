@@ -1,5 +1,5 @@
 ---
-name: glab-watch
+name: ci-watch
 description: Monitor an MR for pipeline failures and review comments, diagnose issues, and propose fixes until merged. Use after creating/pushing an MR.
 ---
 

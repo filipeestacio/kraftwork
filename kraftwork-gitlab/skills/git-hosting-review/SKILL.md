@@ -1,5 +1,5 @@
 ---
-name: glab-review
+name: git-hosting-review
 description: Use when reviewing someone else's merge request — fetches MR details, shows diffs, lists discussions, and supports local checkout and commenting
 ---
 

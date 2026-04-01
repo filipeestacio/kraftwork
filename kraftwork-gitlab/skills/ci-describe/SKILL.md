@@ -1,5 +1,5 @@
 ---
-name: glab-pipeline
+name: ci-describe
 description: Use when a CI pipeline is failing, you want to check pipeline status, read job logs, retry failed jobs, or watch a running pipeline
 ---
 

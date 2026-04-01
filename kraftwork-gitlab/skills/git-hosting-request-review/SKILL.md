@@ -1,5 +1,5 @@
 ---
-name: glab-mr
+name: git-hosting-request-review
 description: Use when managing merge requests — creating, checking status, listing open MRs, viewing approvals or threads, or updating MR description
 ---
 
