@@ -52,20 +52,13 @@ esac
 ### Step 2: Extract Context
 
 ```sh
-# Extract ticket ID using provider-aware pattern
-scripts_dir=$(dirname "$(dirname "$(dirname "$(dirname "${BASH_SOURCE[0]}")")")")/scripts
-TICKET_PATTERN=$($scripts_dir/resolve-provider.sh fragment ticket-management ticket-id-pattern 2>/dev/null || echo "")
+TICKET_ID=$(basename "$WORKTREE_PATH" | grep -oE '^[A-Z]+-[0-9]+')
 
-if [ -z "$TICKET_PATTERN" ]; then
+if [ -z "$TICKET_ID" ]; then
   TICKET_ID=$(basename "$WORKTREE_PATH")
-else
-  TICKET_ID=$(basename "$WORKTREE_PATH" | grep -oE "$TICKET_PATTERN")
 fi
 
-# Find workspace root
 WORKSPACE=$(<scripts-dir>/find-workspace.sh)
-
-# Set spec directory
 SPEC_DIR="$WORKSPACE/docs/specs/$TICKET_ID"
 
 echo "Ticket: $TICKET_ID"
