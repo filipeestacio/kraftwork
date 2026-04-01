@@ -20,7 +20,22 @@ Add a new repository to the workspace as a git submodule, scan its codebase for 
 | Script | Purpose |
 |--------|---------|
 | `find-workspace.sh` | Locate workspace root |
-| `resolve-provider.sh` | Resolve provider-specific scripts |
+
+## Provider Skills Used
+
+| Category | Skill | Purpose |
+|---|---|---|
+| git-hosting | find | Search for branches and PRs matching a ticket ID |
+| git-hosting | import | Clone a repository into the workspace |
+
+## Provider Skill Resolution
+
+To invoke a provider skill:
+
+1. Read `workspace.json` at the workspace root
+2. Look up the provider: `jq -r '.providers["<category>"]' workspace.json`
+3. Construct: `{provider}:{category}-{skill}`
+4. Invoke via the Skill tool
 
 ## Script Paths
 
@@ -44,13 +59,14 @@ fi
 echo "Workspace: $WORKSPACE"
 ```
 
-### Step 2: Resolve Provider Scripts
+### Step 2: Check Provider Availability
 
 ```sh
-SEARCH_PRS=$(<scripts-dir>/resolve-provider.sh script git-hosting search-prs 2>/dev/null || echo "")
-SEARCH_BRANCHES=$(<scripts-dir>/resolve-provider.sh script git-hosting search-branches 2>/dev/null || echo "")
-CLONE_REPO=$(<scripts-dir>/resolve-provider.sh script git-hosting clone-repo 2>/dev/null || echo "")
+WORKSPACE_JSON="$WORKSPACE/workspace.json"
+GIT_PROVIDER=$(jq -r '.providers["git-hosting"] // empty' "$WORKSPACE_JSON")
 ```
+
+If empty, inform the user that branch/PR search and cloning will not be available — they can provide a repo path or URL manually.
 
 ### Step 3: Get Ticket or Repository Identifier
 
@@ -74,38 +90,15 @@ If exists, ask user: use existing, or remove and reimport?
 
 ### Step 5: Search for Remote Branches
 
-```sh
-echo "Searching for branches matching $TICKET_ID..."
+If git-hosting is configured, invoke `{git-hosting}:git-hosting-find` with the ticket ID to search for matching branches.
 
-BRANCH_RESULTS=$($SEARCH_BRANCHES "$TICKET_ID" "$WORKSPACE" 2>/dev/null)
-BRANCH_COUNT=$(echo "$BRANCH_RESULTS" | jq 'length' 2>/dev/null || echo "0")
-
-if [ "$BRANCH_COUNT" -gt 0 ]; then
-  echo "Found $BRANCH_COUNT matching branches:"
-  echo "$BRANCH_RESULTS" | jq -r '.[] | "  \(.repo) → \(.branch) [\(.location)]"'
-fi
-```
+If git-hosting is not configured, skip to Step 7 (ask user for repo).
 
 ### Step 6: PR Search (Fallback)
 
-If no branches found:
+If no branches found and git-hosting is configured, invoke `{git-hosting}:git-hosting-find` again, requesting a PR search for the ticket ID.
 
-```sh
-if [ "$BRANCH_COUNT" -eq 0 ] && [ -n "$SEARCH_PRS" ]; then
-  echo "No local branches found. Searching PRs..."
-
-  PR_RESULTS=$($SEARCH_PRS "$TICKET_ID" 2>/dev/null)
-  PR_COUNT=$(echo "$PR_RESULTS" | jq 'length' 2>/dev/null || echo "0")
-
-  if [ "$PR_COUNT" -gt 0 ]; then
-    echo "Found PRs:"
-    echo "$PR_RESULTS" | jq -r '.[] | "  \(.repo) - \(.title) [\(.state)]"'
-  else
-    echo "No branches or PRs found for $TICKET_ID"
-    exit 1
-  fi
-fi
-```
+If no results from either search, inform the user and exit.
 
 ### Step 7: Select Branch to Import
 
@@ -124,18 +117,16 @@ Options: list branches, or "All" for multi-repo tickets.
 
 ### Step 8: Clone and Add as Submodule
 
+If the repo is not already present at `$WORKSPACE/modules/$REPO_NAME`, invoke `{git-hosting}:git-hosting-import` with the repo name and target path.
+
+If git-hosting is not configured, ask the user for a clone URL and run:
 ```sh
-REPO_NAME="$SELECTED_REPO"
-BRANCH_NAME="$SELECTED_BRANCH"
-MODULE_DIR="$WORKSPACE/modules/$REPO_NAME"
+git -C "$WORKSPACE" submodule add "<clone-url>" "modules/$REPO_NAME"
+```
 
-# Clone repo if not already present
-if [ ! -d "$MODULE_DIR" ]; then
-  git -C "$WORKSPACE" submodule add <url> "modules/$REPO_NAME"
-  echo "Added submodule: modules/$REPO_NAME"
-fi
+Then fetch and checkout the branch:
 
-# Fetch and checkout the branch
+```sh
 git -C "$MODULE_DIR" fetch origin "$BRANCH_NAME"
 git -C "$MODULE_DIR" checkout --track "origin/$BRANCH_NAME"
 
