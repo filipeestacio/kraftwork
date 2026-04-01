@@ -7,9 +7,10 @@ Opinionated developer workflow orchestration for [Claude Code](https://docs.anth
 Kraftwork is a monorepo containing a core plugin and optional extensions, all built as Claude Code plugins. It enforces a structured workflow: plan before you code, isolate work in worktrees, decompose into small reviewable MRs, and capture learnings along the way.
 
 ```
-kraftwork/              Core workflow plugin
+kraftwork/              Core workflow plugin with pluggable providers
 kraftwork-argocd/       ArgoCD deployment health and debugging
-kraftwork-clickup/      ClickUp task management and team communication
+kraftwork-clickup/      ClickUp ticket management and document storage provider
+kraftwork-github/       GitHub git hosting provider
 kraftwork-gitlab/       GitLab CI/CD and merge request workflows
 kraftwork-intel/        Local intelligence layer — metrics, knowledge, evals
 kraftwork-jira/         Jira ticket search and management
@@ -21,28 +22,35 @@ kraftwork-zellij/       Zellij terminal multiplexer control
 
 The typical development cycle follows this path:
 
-1. **`/kraft-init`** — Initialize workspace with repos, config, and directory scaffolding
-2. **`/kraft-start TICKET-123`** — Create a git worktree for a ticket, auto-discovering the target repo
+1. **`/kraft-config`** — Configure workspace with repos, providers, and directory scaffolding
+2. **`/kraft-work TICKET-123`** — Create a git worktree for a ticket, resume existing work, or manage stacked worktrees
 3. **`/kraft-plan`** — Brainstorm, create a spec, and decompose work into MR-sized tasks
 4. **`/kraft-implement`** — Execute tasks from the spec with change tracking
-5. **`/kraft-resume`** — List active worktrees and pick up where you left off
-6. **`/kraft-split`** — Split a branch into stacked MRs with verification
-7. **`/kraft-archive`** — Clean up completed worktrees with safety checks
+5. **`/kraft-split`** — Split a branch into stacked MRs with verification
+6. **`/kraft-archive`** — Clean up completed worktrees with safety checks
 
-Additional core commands: `/kraft-stack` (dependent worktrees), `/kraft-sync` (pull latest across repos), `/kraft-import` (import remote branches), `/kraft-retro` (post-merge retrospective).
+Additional core commands: `/kraft-sync` (pull latest across repos), `/kraft-import` (import remote branches), `/kraft-retro` (post-merge retrospective).
 
 ### Workspace Layout
 
 ```
 workspace/
-├── sources/                 Read-only reference repositories
+├── modules/                 Source repositories
 ├── tasks/TICKET-123/        Isolated git worktrees per ticket
 └── docs/specs/TICKET-123/   Planning artifacts (idea.md, spec.md, tasks.md)
 ```
 
 ## Extensions
 
-Each extension is an independent Claude Code plugin that builds on the core.
+Each extension is an independent Claude Code plugin that builds on the core. Extensions that implement the provider contract (git hosting, tickets, docs) are automatically discovered at runtime.
+
+### kraftwork-github
+
+GitHub git hosting provider.
+
+| Command | Purpose |
+|---------|---------|
+| Provider scripts | Clone repos, create PRs, search branches/PRs, CI status |
 
 ### kraftwork-gitlab
 
@@ -116,28 +124,80 @@ Zellij terminal multiplexer integration.
 
 ## Installation
 
-Each module is a Claude Code plugin. Install them by adding the plugin directories to your Claude Code configuration:
+The marketplace is bundled in this repository. Add it and install plugins with the Claude Code CLI.
+
+### Via marketplace (recommended)
 
 ```bash
-# Core (required)
-claude plugins add /path/to/kraftwork/kraftwork
+# Add the marketplace
+claude plugin marketplace add https://github.com/filipeestacio/kraftwork.git
 
-# Extensions (optional, each requires core)
-claude plugins add /path/to/kraftwork/kraftwork-gitlab
-claude plugins add /path/to/kraftwork/kraftwork-jira
-claude plugins add /path/to/kraftwork/kraftwork-clickup
-claude plugins add /path/to/kraftwork/kraftwork-argocd
-claude plugins add /path/to/kraftwork/kraftwork-review
-claude plugins add /path/to/kraftwork/kraftwork-intel
-claude plugins add /path/to/kraftwork/kraftwork-zellij
+# Install core (required)
+claude plugin install kraftwork@kraftwork-marketplace
+
+# Install extensions (optional, each requires core)
+claude plugin install kraftwork-clickup@kraftwork-marketplace
+claude plugin install kraftwork-gitlab@kraftwork-marketplace
+claude plugin install kraftwork-intel@kraftwork-marketplace
+# ... see plugin list below
 ```
+
+After installing, restart Claude Code and run `/kraft-config` to set up your workspace.
+
+### Via local path
+
+For development or if you've cloned this monorepo locally:
+
+```bash
+claude --plugin-dir /path/to/kraftwork/kraftwork
+claude --plugin-dir /path/to/kraftwork/kraftwork-clickup
+# ... etc
+```
+
+### Nix / Home Manager
+
+If `~/.claude/settings.json` is a read-only symlink (managed by Home Manager), user-scope installs fail with `EACCES`. Use `--scope project` for all installs:
+
+```bash
+claude plugin install kraftwork@kraftwork-marketplace --scope project
+```
+
+### LLM autonomous installation
+
+Paste this prompt into Claude Code to install automatically:
+
+````
+Install the Kraftwork plugin marketplace and plugins for this workspace.
+
+1. Add the marketplace:
+   claude plugin marketplace add https://github.com/filipeestacio/kraftwork.git
+
+2. Install the core plugin and any add-ons relevant to this project. Available plugins:
+   - kraftwork (core — always install this first)
+   - kraftwork-github (GitHub git hosting provider)
+   - kraftwork-gitlab (GitLab CI/CD)
+   - kraftwork-clickup (ClickUp tickets and docs)
+   - kraftwork-jira (Jira integration)
+   - kraftwork-intel (local intelligence layer)
+   - kraftwork-argocd (ArgoCD debugging)
+   - kraftwork-review (code review perspectives)
+   - kraftwork-zellij (Zellij multiplexer)
+   - presentation (standalone — HTML slideshows)
+
+   Use: claude plugin install <name>@kraftwork-marketplace
+   If the install fails with EACCES on ~/.claude/settings.json (common with
+   Nix/Home Manager), retry with --scope project.
+
+3. After installing, tell me to restart the session so plugin skills are
+   registered, then run /kraft-config to initialize the workspace.
+````
 
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - [Bun](https://bun.sh) — used by helper scripts
 - Git with worktree support
-- Extension-specific: `glab` (GitLab CLI), `acli` (Jira CLI), `argocd` (ArgoCD CLI), [Zellij](https://zellij.dev), `CLICKUP_TOKEN` (ClickUp API token)
+- Extension-specific: `gh` (GitHub CLI), `glab` (GitLab CLI), `acli` (Jira CLI), `argocd` (ArgoCD CLI), [Zellij](https://zellij.dev), `CLICKUP_TOKEN` (ClickUp API token)
 
 ## Design Principles
 

@@ -1,0 +1,112 @@
+{
+  "name": "kraftwork-marketplace",
+  "owner": {
+    "name": "Filipe Estacio",
+    "email": "f.estacio@gmail.com"
+  },
+  "metadata": {
+    "description": "Kraftwork — opinionated developer workflow orchestration for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "kraftwork",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork"
+      },
+      "description": "Opinionated developer workflow orchestration with pluggable providers for git hosting, ticket management, and document storage",
+      "version": "3.0.0"
+    },
+    {
+      "name": "kraftwork-github",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-github"
+      },
+      "description": "GitHub git hosting provider for Kraftwork (requires kraftwork core)",
+      "version": "3.0.0"
+    },
+    {
+      "name": "kraftwork-gitlab",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-gitlab"
+      },
+      "description": "GitLab CI/CD and merge request workflows for Kraftwork (requires kraftwork core)",
+      "version": "3.0.0"
+    },
+    {
+      "name": "kraftwork-clickup",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-clickup"
+      },
+      "description": "ClickUp ticket management and document storage provider for Kraftwork (requires kraftwork core)",
+      "version": "3.0.0"
+    },
+    {
+      "name": "kraftwork-jira",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-jira"
+      },
+      "description": "Jira ticket search and management for Kraftwork (requires kraftwork core)",
+      "version": "3.0.0"
+    },
+    {
+      "name": "kraftwork-intel",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-intel"
+      },
+      "description": "Local intelligence layer — metrics, knowledge, and evals for Kraftwork workflows (requires kraftwork core)",
+      "version": "2.0.0"
+    },
+    {
+      "name": "kraftwork-argocd",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-argocd"
+      },
+      "description": "ArgoCD application health and debugging for Kraftwork (requires kraftwork core)",
+      "version": "2.0.0"
+    },
+    {
+      "name": "kraftwork-review",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-review"
+      },
+      "description": "Independent code review perspectives for Kraftwork (requires kraftwork core)",
+      "version": "2.0.0"
+    },
+    {
+      "name": "kraftwork-zellij",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-zellij"
+      },
+      "description": "Zellij terminal multiplexer control for Kraftwork (requires kraftwork core)",
+      "version": "2.0.0"
+    },
+    {
+      "name": "presentation",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/filipeestacio/presentation.git"
+      },
+      "description": "Generate self-contained HTML slideshows with a dark-theme design system",
+      "version": "1.1.0"
+    }
+  ]
+}
