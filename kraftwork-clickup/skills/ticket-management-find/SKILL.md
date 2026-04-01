@@ -1,5 +1,5 @@
 ---
-name: clickup-search
+name: ticket-management-find
 description: Use when searching for ClickUp tasks — finding your open tasks, browsing by list, filtering by status, or searching by name
 ---
 

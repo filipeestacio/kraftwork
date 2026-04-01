@@ -2,23 +2,11 @@
   "providers": [
     {
       "category": "ticket-management",
-      "scripts": {
-        "fetch-ticket": "scripts/fetch-ticket.sh",
-        "search-tickets": "scripts/search-tickets.sh",
-        "transition-ticket": "scripts/transition-ticket.sh"
-      },
-      "fragments": {
-        "ticket-id-pattern": "fragments/ticket-id-pattern.md"
-      }
+      "skills": ["find", "describe", "create", "update"]
     },
     {
       "category": "document-storage",
-      "scripts": {
-        "write-doc": "scripts/write-doc.sh",
-        "read-doc": "scripts/read-doc.sh",
-        "list-docs": "scripts/list-docs.sh"
-      },
-      "fragments": {}
+      "skills": ["find", "describe", "create", "update"]
     }
   ]
 }

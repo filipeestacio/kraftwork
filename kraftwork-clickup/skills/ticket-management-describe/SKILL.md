@@ -1,5 +1,5 @@
 ---
-name: clickup-ticket
+name: ticket-management-describe
 description: Use when working with a specific ClickUp task — viewing details, creating new tasks, updating fields, transitioning status, adding comments, or managing checklists
 ---
 
