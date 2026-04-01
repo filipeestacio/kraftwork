@@ -260,12 +260,17 @@ All values must come from workspace.json. Do not hardcode any company name, URLs
 
 ### Step 11: Delta Mode Logic
 
-If `workspace.json` already exists and the user did not pass `--reconfigure`:
+If `workspace.json` already exists:
 
 1. Read the existing workspace.json.
-2. Check for new `kraftwork-*` plugins that have appeared since the last run by comparing current discovered providers against `providers.<category>` values in the file.
-3. For each category where a new provider is now available that was not previously selected, offer to switch: "A new provider `<plugin>` is available for `<category>`. Switch from `<current>`?"
-4. For each selected provider, check its `config/workspace-config.json` for any configuration changes needed.
+2. Check `configVersion`:
+   - **Version 2 or below:** Inform the user that the workspace format has changed. Offer to migrate:
+     - Convert `providers.<category>.plugin` format to `providers.<category>` (direct string)
+     - Add any new categories discovered from installed plugins
+     - Bump to `configVersion: 3`
+   - **Version 3:** Proceed with normal delta checks.
+3. Check for new `kraftwork-*` plugins that have appeared since the last run.
+4. For each of the six categories, check if a new provider is available that was not previously configured. Offer to add it.
 5. Preserve all existing config — only add or update keys. Never remove existing keys or sections.
 
 If nothing is missing or changed, report "Config up to date" and exit.
