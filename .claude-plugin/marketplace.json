@@ -16,8 +16,8 @@
         "url": "https://github.com/filipeestacio/kraftwork.git",
         "path": "kraftwork"
       },
-      "description": "Opinionated developer workflow orchestration with pluggable providers for git hosting, ticket management, and document storage",
-      "version": "3.0.0"
+      "description": "Opinionated developer workflow orchestration with skill-based provider interfaces for git hosting, CI, ticket management, document storage, memory, and messaging",
+      "version": "4.0.0"
     },
     {
       "name": "kraftwork-github",
@@ -26,8 +26,8 @@
         "url": "https://github.com/filipeestacio/kraftwork.git",
         "path": "kraftwork-github"
       },
-      "description": "GitHub git hosting provider for Kraftwork (requires kraftwork core)",
-      "version": "3.0.0"
+      "description": "GitHub git hosting provider for Kraftwork — implements git-hosting interface (requires kraftwork core)",
+      "version": "4.0.0"
     },
     {
       "name": "kraftwork-gitlab",
@@ -36,8 +36,8 @@
         "url": "https://github.com/filipeestacio/kraftwork.git",
         "path": "kraftwork-gitlab"
       },
-      "description": "GitLab CI/CD and merge request workflows for Kraftwork (requires kraftwork core)",
-      "version": "3.0.0"
+      "description": "GitLab provider for Kraftwork — implements git-hosting and ci interfaces (requires kraftwork core)",
+      "version": "4.0.0"
     },
     {
       "name": "kraftwork-clickup",
@@ -46,8 +46,8 @@
         "url": "https://github.com/filipeestacio/kraftwork.git",
         "path": "kraftwork-clickup"
       },
-      "description": "ClickUp ticket management and document storage provider for Kraftwork (requires kraftwork core)",
-      "version": "3.0.0"
+      "description": "ClickUp provider for Kraftwork — implements ticket-management and document-storage interfaces (requires kraftwork core)",
+      "version": "4.0.0"
     },
     {
       "name": "kraftwork-jira",
@@ -56,8 +56,8 @@
         "url": "https://github.com/filipeestacio/kraftwork.git",
         "path": "kraftwork-jira"
       },
-      "description": "Jira ticket search and management for Kraftwork (requires kraftwork core)",
-      "version": "3.0.0"
+      "description": "Jira provider for Kraftwork — implements ticket-management interface (requires kraftwork core)",
+      "version": "4.0.0"
     },
     {
       "name": "kraftwork-intel",
@@ -66,8 +66,8 @@
         "url": "https://github.com/filipeestacio/kraftwork.git",
         "path": "kraftwork-intel"
       },
-      "description": "Local intelligence layer — metrics, knowledge, and evals for Kraftwork workflows (requires kraftwork core)",
-      "version": "2.0.0"
+      "description": "Local intelligence layer for Kraftwork — implements memory interface with SQLite, LanceDB, and Obsidian backends (requires kraftwork core)",
+      "version": "3.0.0"
     },
     {
       "name": "kraftwork-argocd",
