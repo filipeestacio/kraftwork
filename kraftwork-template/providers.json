@@ -2,39 +2,15 @@
   "providers": [
     {
       "category": "git-hosting",
-      "scripts": {
-        "auth-check": "scripts/auth-check.sh",
-        "search-prs": "scripts/search-prs.sh",
-        "search-branches": "scripts/search-branches.sh",
-        "clone-repo": "scripts/clone-repo.sh",
-        "create-pr": "scripts/create-pr.sh",
-        "fetch-pr-details": "scripts/fetch-pr-details.sh",
-        "ci-status": "scripts/ci-status.sh"
-      },
-      "fragments": {
-        "pr-description-guide": "fragments/pr-description-guide.md",
-        "branch-naming": "fragments/branch-naming.md"
-      }
+      "skills": ["find", "describe", "import", "request-review", "review"]
     },
     {
       "category": "ticket-management",
-      "scripts": {
-        "fetch-ticket": "scripts/fetch-ticket.sh",
-        "search-tickets": "scripts/search-tickets.sh",
-        "transition-ticket": "scripts/transition-ticket.sh"
-      },
-      "fragments": {
-        "ticket-id-pattern": "fragments/ticket-id-pattern.md"
-      }
+      "skills": ["find", "describe", "create", "update"]
     },
     {
       "category": "document-storage",
-      "scripts": {
-        "write-doc": "scripts/write-doc.sh",
-        "read-doc": "scripts/read-doc.sh",
-        "list-docs": "scripts/list-docs.sh"
-      },
-      "fragments": {}
+      "skills": ["find", "describe", "create", "update"]
     }
   ]
 }
