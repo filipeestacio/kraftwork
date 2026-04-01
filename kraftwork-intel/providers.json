@@ -1,0 +1,8 @@
+{
+  "providers": [
+    {
+      "category": "memory",
+      "skills": ["memorize", "recall", "forget", "reflect"]
+    }
+  ]
+}

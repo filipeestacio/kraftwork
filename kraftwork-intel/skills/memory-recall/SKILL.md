@@ -1,5 +1,5 @@
 ---
-name: intel-query
+name: memory-recall
 description: Search the knowledge base for codebase learnings — architecture, patterns, debugging insights. Use when you need context about how something works or why a decision was made.
 ---
 

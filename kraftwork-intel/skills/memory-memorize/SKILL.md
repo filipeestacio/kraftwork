@@ -1,5 +1,5 @@
 ---
-name: intel-store
+name: memory-memorize
 description: Store a learning about the codebase — architecture decisions, patterns, debugging insights, conventions. Use when you discover something worth remembering across sessions.
 ---
 
