@@ -1,0 +1,9 @@
+{
+  "name": "kraftwork-slack",
+  "version": "1.0.0",
+  "description": "Slack messaging provider for Kraftwork — implements messaging interface (requires kraftwork core)",
+  "author": {
+    "name": "Filipe Estacio",
+    "email": "f.estacio@gmail.com"
+  }
+}

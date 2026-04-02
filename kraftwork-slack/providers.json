@@ -1,0 +1,8 @@
+{
+  "providers": [
+    {
+      "category": "messaging",
+      "skills": ["find", "describe", "notify"]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "section": "slack",
+  "title": "Slack Configuration",
+  "description": "Slack channels and their purposes for intelligent message routing",
+  "fields": [
+    {
+      "key": "channels",
+      "type": "array",
+      "prompt": "List your Slack channels, what they're for, and when to use them. You can add more channels later by running kraft-config again.",
+      "example": [
+        {
+          "name": "#dev-updates",
+          "purpose": "Deployment and CI notifications",
+          "when": "After successful deploys, pipeline failures, version bumps"
+        },
+        {
+          "name": "#team-standup",
+          "purpose": "Daily standup summaries and blockers",
+          "when": "Morning updates, blocker escalations"
+        }
+      ],
+      "required": true
+    }
+  ]
+}
