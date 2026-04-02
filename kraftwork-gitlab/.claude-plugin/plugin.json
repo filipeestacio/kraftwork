@@ -1,6 +1,6 @@
 {
   "name": "kraftwork-gitlab",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "GitLab CI/CD and merge request workflows for Kraftwork (requires kraftwork core)",
   "author": {
     "name": "Filipe Estacio",

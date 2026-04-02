@@ -1,6 +1,6 @@
 {
   "name": "kraftwork-jira",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Jira ticket search and management for Kraftwork (requires kraftwork core)",
   "author": {
     "name": "Filipe Estacio",
