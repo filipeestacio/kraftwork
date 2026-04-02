@@ -1,3 +1,5 @@
+<img width="1600" height="679" alt="Kraftwork_banner" src="https://github.com/user-attachments/assets/09164633-434a-4633-92ad-57bd7feebe19" />
+
 # Kraftwork
 
 Opinionated developer workflow orchestration for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Manages the full development lifecycle — from ticket to merge request — through spec-driven planning, git worktree isolation, and modular integrations.
