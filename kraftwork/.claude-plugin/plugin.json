@@ -1,6 +1,6 @@
 {
   "name": "kraftwork",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Opinionated developer workflow orchestration with pluggable providers for git hosting, ticket management, and document storage",
   "author": {
     "name": "Filipe Estacio",
