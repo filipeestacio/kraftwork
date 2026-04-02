@@ -1,11 +1,11 @@
 ---
 name: kraft-archive
-description: Clean up a completed worktree with safety checks to prevent data loss. Use when done with a ticket.
+description: Archive a completed worktree — generates a searchable summary, moves specs to deep storage, and removes the worktree. Use when done with a ticket.
 ---
 
 # Workspace Archive - Clean Up Completed Work
 
-Safely remove a git worktree for a completed ticket, with checks to prevent accidental data loss.
+Safely archive a completed ticket: generate a searchable summary, move specs to deep storage, and remove the git worktree.
 
 ## Scripts Used
 
@@ -26,13 +26,11 @@ When you load this skill, note its file path and compute the scripts directory. 
 
 ## Workflow
 
-### Step 1: Locate Workspace
+### Step 1: Locate Workspace & Target Worktree
 
 ```sh
 WORKSPACE=$(<scripts-dir>/find-workspace.sh)
 ```
-
-### Step 2: Determine Target Worktree
 
 If user is currently in a worktree:
 ```sh
@@ -58,11 +56,11 @@ FORMAT=detail <scripts-dir>/list-worktrees.sh "$WORKSPACE"
 
 Then ask user which to archive using AskUserQuestion.
 
-### Step 3: Safety Checks
+### Step 2: Safety Checks
 
 Run safety check on the worktree:
 ```sh
-SAFETY=$(<scripts-dir>/safety-check.sh "$WORKTREE_PATH")
+SAFETY=$(<scripts-dir>/safety-check.sh "$WORKTREE_PATH" || true)
 echo "$SAFETY" | jq .
 ```
 
@@ -74,15 +72,13 @@ HAS_OPEN_PR=$(echo "$SAFETY" | jq -r '.open_pr.exists')
 PR_URL=$(echo "$SAFETY" | jq -r '.open_pr.url')
 ```
 
-### Step 4: Confirm with User
-
 If any warnings were raised, use AskUserQuestion:
 
 ```
 Safety checks found potential issues:
 - Uncommitted changes: [count] files modified
 - Unpushed commits: [count] commits
-- Open PR: [url]
+- Open MR: [url]
 
 Are you sure you want to archive this worktree?
 ```
@@ -92,88 +88,120 @@ Options:
 - **No, let me push first** - Abort so user can push
 - **No, cancel** - Abort completely
 
-### Step 5: Navigate Away from Worktree
+### Step 3: Retro Nudge
 
-If currently inside the worktree:
+Check if a retrospective has been run:
+```sh
+RETRO_FILE="$WORKSPACE/docs/lessons/${TICKET_ID}-retro.md"
+if [ ! -f "$RETRO_FILE" ]; then
+  echo "No retrospective found for $TICKET_ID."
+fi
+```
+
+If no retro file exists, use AskUserQuestion:
+
+```
+No retrospective found for $TICKET_ID. Want to run kraft-retro before archiving?
+```
+
+Options:
+- **Yes, run retro first** - Hand off to kraft-retro, then resume archive from Step 4
+- **No, skip retro** - Continue archiving without a retro
+
+### Step 4: Generate Summary
+
+Read available inputs to synthesize a summary. If no spec directory exists (e.g., quick fix or hotfix), generate the summary from the git log and retro only.
+
+1. `$WORKSPACE/docs/specs/$TICKET_ID/spec.md` for intent, requirements, decisions (if exists)
+2. `$WORKSPACE/docs/specs/$TICKET_ID/tasks.md` for planned scope (if exists)
+3. `$WORKSPACE/docs/specs/$TICKET_ID/changes/` for mid-implementation pivots (if directory exists)
+4. `$WORKSPACE/docs/lessons/${TICKET_ID}-retro.md` for lessons and outcome (if file exists)
+5. Git log for the branch:
+```sh
+BRANCH=$(git -C "$WORKTREE_PATH" branch --show-current)
+git -C "$WORKTREE_PATH" log --oneline main..$BRANCH
+```
+
+Tone: factual, compressed, skimmable in 10 seconds.
+
+Synthesize into a summary following this format:
+
+```markdown
+# TICKET_ID: Short title from spec
+
+## What changed
+Brief description of the work delivered (2-4 sentences).
+
+## Key decisions
+- Decision and rationale
+- Rejected alternative and why
+
+## Areas touched
+- `path/to/module/` — what was changed
+- `path/to/other/` — what was changed
+
+## Outcome
+Merged via MR !number on YYYY-MM-DD. (Or: abandoned, split, etc.)
+
+---
+Archived specs: `docs/archive/TICKET_ID/`
+```
+
+Show the draft summary to the user before writing. If the user requests changes, revise and re-present until approved.
+
+Write the approved summary:
+```sh
+mkdir -p "$WORKSPACE/docs/summaries"
+```
+Then use the Write tool to create `$WORKSPACE/docs/summaries/$TICKET_ID.md`.
+
+### Step 5: Archive Specs
+
+Move the spec directory to deep storage (skip if no spec directory exists):
+```sh
+if [ -d "$WORKSPACE/docs/specs/$TICKET_ID" ]; then
+  mkdir -p "$WORKSPACE/docs/archive"
+  mv "$WORKSPACE/docs/specs/$TICKET_ID" "$WORKSPACE/docs/archive/$TICKET_ID"
+  echo "Specs archived to: $WORKSPACE/docs/archive/$TICKET_ID/"
+fi
+```
+
+### Step 6: Remove Worktree
+
+If currently inside the worktree, navigate away first:
 ```sh
 cd "$WORKSPACE"
 echo "Moved to: $(pwd)"
 ```
 
-### Step 6: Remove Worktree
-
+Remove the worktree:
 ```sh
 BRANCH=$(git -C "$WORKTREE_PATH" branch --show-current)
 
-# Find the source repo
 GIT_DIR=$(git -C "$WORKTREE_PATH" rev-parse --git-dir)
 SOURCE_REPO=$(echo "$GIT_DIR" | sed 's|/\.git/worktrees/.*|/.git|' | xargs dirname)
 
-# Remove the worktree
 git -C "$SOURCE_REPO" worktree remove "$WORKTREE_PATH"
+git -C "$SOURCE_REPO" worktree prune
 
 echo "Worktree removed: $WORKTREE_PATH"
 ```
 
-### Step 7: Prune Worktree References
-
-```sh
-git -C "$SOURCE_REPO" worktree prune
-```
-
-### Step 8: Handle Spec Directory
-
-Ask user what to do with specs using AskUserQuestion:
+### Step 7: Completion Output
 
 ```
-What should happen to the spec files at $WORKSPACE/docs/specs/$TICKET_ID?
-```
+Archived TICKET_ID
 
-Options:
-- **Keep** (default) - Leave specs in place
-- **Archive** - Move to `$WORKSPACE/docs/specs/.archive/$TICKET_ID`
-- **Delete** - Remove specs entirely
-
-```sh
-SPEC_DIR="$WORKSPACE/docs/specs/$TICKET_ID"
-
-case "$CHOICE" in
-  archive)
-    mkdir -p "$WORKSPACE/docs/specs/.archive"
-    mv "$SPEC_DIR" "$WORKSPACE/docs/specs/.archive/"
-    echo "Specs archived to: $WORKSPACE/docs/specs/.archive/$TICKET_ID"
-    ;;
-  delete)
-    rm -rf "$SPEC_DIR"
-    echo "Specs deleted"
-    ;;
-  *)
-    echo "Specs kept at: $SPEC_DIR"
-    ;;
-esac
-```
-
-### Step 9: Output Completion
-
-```
-Archived worktree for $TICKET_ID
-
-Removed:
-- Worktree: $WORKTREE_PATH
-- Branch: $BRANCH (still exists locally and on remote)
-
-Kept:
-- Specs: $WORKSPACE/docs/specs/$TICKET_ID
-
-Note: The branch still exists. To delete it:
-  git branch -d $BRANCH           # Delete local
-  git push origin --delete $BRANCH  # Delete remote
+  Summary:  docs/summaries/TICKET_ID.md
+  Specs:    docs/archive/TICKET_ID/
+  Worktree: removed
+  Branch:   still exists (local + remote)
 ```
 
 ## Safety Principles
 
 1. **Never force-remove with uncommitted changes** without explicit user confirmation
 2. **Always check for unpushed commits** before removing
-3. **Warn about open PRs** - user might lose context
-4. **Keep specs by default** - they might be needed later
-5. **Navigate away first** - prevents "cannot remove current directory" errors
+3. **Warn about open MRs** - user might lose context
+4. **Navigate away first** - prevents "cannot remove current directory" errors
+5. **Always generate a summary before archiving specs** - completed work must leave a searchable trace
