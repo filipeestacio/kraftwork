@@ -1,0 +1,21 @@
+{
+  "section": "growth",
+  "title": "Growth Tracking Configuration",
+  "description": "Settings for goal tracking and evidence-based reflection sessions",
+  "fields": [
+    {
+      "key": "docsPath",
+      "type": "string",
+      "prompt": "Where should growth documents be stored, relative to workspace root?",
+      "example": "docs/growth",
+      "required": false
+    },
+    {
+      "key": "disabledSources",
+      "type": "string[]",
+      "prompt": "Any evidence sources to skip? (slack, git-hosting, ticket-management, gmail, google-drive, local)",
+      "example": "gmail, google-drive",
+      "required": false
+    }
+  ]
+}
