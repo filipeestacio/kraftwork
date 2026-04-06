@@ -245,9 +245,61 @@ If `$WORKSPACE/CLAUDE.md` does not already exist, generate it with:
 
 All values must come from workspace.json. Do not hardcode any company name, URLs, or repository names.
 
+## Phase 6.5 — Plugin-Specific Setup
+
+### Step 11: Set Up kraftwork-intel CLI
+
+This step runs only when `kraftwork-intel` is the selected memory provider.
+
+```sh
+MEMORY_PROVIDER=$(jq -r '.providers.memory // empty' workspace.json)
+```
+
+If `MEMORY_PROVIDER` equals `kraftwork-intel`:
+
+1. **Locate the installed plugin path:**
+
+```sh
+INTEL_PLUGIN=$(echo "$ENABLED_PLUGINS" | grep "^kraftwork-intel@")
+MARKETPLACE="${INTEL_PLUGIN##*@}"
+PLUGIN_DIR="$CACHE_DIR/$MARKETPLACE/kraftwork-intel"
+VERSION_DIR=$(ls -1 "$PLUGIN_DIR" | head -1)
+INTEL_PATH="$PLUGIN_DIR/$VERSION_DIR"
+```
+
+2. **Install dependencies:**
+
+```sh
+cd "$INTEL_PATH" && bun install
+```
+
+If `bun install` fails, inform the user and stop: `"kraftwork-intel requires bun >= 1.3. Install from https://bun.sh"`
+
+3. **Run the dependency check:**
+
+```sh
+bun run "$INTEL_PATH/src/cli.ts" check
+```
+
+If the check exits non-zero, surface the failure to the user before continuing.
+
+4. **Write the wrapper script:**
+
+```sh
+mkdir -p "$HOME/.claude/kraftwork-intel"
+cat > "$HOME/.claude/kraftwork-intel/cli" <<EOF
+#!/bin/sh
+exec bun run "$INTEL_PATH/src/cli.ts" "\$@"
+EOF
+chmod +x "$HOME/.claude/kraftwork-intel/cli"
+echo "✓ kraftwork-intel CLI registered at ~/.claude/kraftwork-intel/cli"
+```
+
+If `~/.claude/kraftwork-intel/cli` already exists (re-run), overwrite it silently — the plugin path may have changed.
+
 ## Idempotent Re-run (Delta Mode)
 
-### Step 11: Delta Mode Logic
+### Step 12: Delta Mode Logic
 
 If `workspace.json` already exists:
 
