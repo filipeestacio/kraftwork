@@ -11,11 +11,8 @@ Local intelligence layer for Kraftwork — metrics, knowledge, and evals.
   curl -fsSL https://bun.sh/install | bash
   ```
 
-- **kraftwork-intel CLI** installed at `~/.claude/kraftwork-intel/`
-  ```sh
-  git clone https://gitlab.com/filipe.estacio/kraftwork-intel-cli.git ~/.claude/kraftwork-intel
-  cd ~/.claude/kraftwork-intel && bun install
-  ```
+- **kraftwork-intel CLI** — bundled with the plugin. Run `/kraft-config` after installing
+  the plugin to register it. No separate install needed.
 
 ### Optional (for eval LLM scoring)
 
@@ -46,8 +43,8 @@ All data is stored locally at `~/.claude/kraftwork-intel/data/metrics.db` (SQLit
 | Skill | Purpose |
 |-------|---------|
 | `/intel-report` | Show skill usage metrics and session statistics |
-| `/intel-store` | Store a codebase learning (architecture, patterns, debugging insights) |
-| `/intel-query` | Search the knowledge base by semantic similarity |
+| `memory-memorize` | Store a codebase learning (architecture, patterns, debugging insights) |
+| `memory-recall` | Search the knowledge base by semantic similarity |
 | `/intel-eval` | Run quality evaluations against skills using recorded interactions |
 
 ### Knowledge Store
@@ -73,31 +70,33 @@ All data lives outside any git repo:
 
 ## CLI Reference
 
-The backing CLI at `~/.claude/kraftwork-intel/` supports direct usage:
+The CLI is registered at `~/.claude/kraftwork-intel/cli` by `/kraft-config`.
 
 ```sh
-cd ~/.claude/kraftwork-intel
-
-# Metrics
-bun run src/cli.ts report                          # Usage summary
-bun run src/cli.ts report --days 7                  # Last 7 days
+# Dependency check
+~/.claude/kraftwork-intel/cli check
 
 # Knowledge
-bun run src/cli.ts store --content "..." --category architecture
-bun run src/cli.ts query --query "how does X work"
-bun run src/cli.ts query --query "..." --category patterns --limit 5
+~/.claude/kraftwork-intel/cli store --content "..." --category architecture --project api
+~/.claude/kraftwork-intel/cli query "how does X work"
+~/.claude/kraftwork-intel/cli query "..." --category patterns --limit 5
+
+# Metrics
+~/.claude/kraftwork-intel/cli report
+~/.claude/kraftwork-intel/cli report --days 7
+~/.claude/kraftwork-intel/cli report --skill memory-memorize
 
 # Evals
-bun run src/cli.ts eval --skill kraft-start     # Eval one skill
-bun run src/cli.ts eval --all                        # Eval all recorded skills
-bun run src/cli.ts eval --flagged                    # Eval skills with <70% success rate
-bun run src/cli.ts eval --skill X --llm              # Include Ollama LLM scoring
+~/.claude/kraftwork-intel/cli eval memory-memorize
+~/.claude/kraftwork-intel/cli eval --all
+~/.claude/kraftwork-intel/cli eval --flagged
+~/.claude/kraftwork-intel/cli eval memory-memorize --llm
 ```
 
 ## Architecture
 
 ```
-Plugin (this repo)          CLI (~/.claude/kraftwork-intel/)
+Plugin (this repo)          CLI (bundled at kraftwork-intel/src/)
 ├── hooks/hooks.json        ├── src/
 │   SessionStart ──────────►│   ├── hooks/session-start.ts
 │   UserPromptSubmit ──────►│   ├── hooks/user-prompt.ts
