@@ -36,10 +36,6 @@ For flagged skills (low success rate):
 
     ~/.claude/kraftwork-intel/cli eval --flagged
 
-To include Ollama LLM scoring (slower but more nuanced):
-
-    ~/.claude/kraftwork-intel/cli eval <skill-name> --llm
-
 ### Step 3: Present results
 
 Format the output as a readable summary. Each eval result includes:

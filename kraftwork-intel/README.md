@@ -90,7 +90,6 @@ The CLI is registered at `~/.claude/kraftwork-intel/cli` by `/kraft-config`.
 ~/.claude/kraftwork-intel/cli eval memory-memorize
 ~/.claude/kraftwork-intel/cli eval --all
 ~/.claude/kraftwork-intel/cli eval --flagged
-~/.claude/kraftwork-intel/cli eval memory-memorize --llm
 ```
 
 ## Architecture
@@ -102,10 +101,10 @@ Plugin (this repo)          CLI (bundled at kraftwork-intel/src/)
 │   UserPromptSubmit ──────►│   ├── hooks/user-prompt.ts
 │   PostToolUse ───────────►│   ├── hooks/post-tool.ts
 │   Stop ──────────────────►│   ├── hooks/stop.ts
-├── skills/                 │   ├── metrics/store.ts
+├── skills/                 │   ├── metrics/db.ts
 │   intel-report ──────────►│   ├── knowledge/store.ts
-│   intel-store ───────────►│   ├── evals/runner.ts
-│   intel-query ───────────►│   └── cli.ts
+│   memory-memorize ───────►│   ├── evals/runner.ts
+│   memory-recall ─────────►│   └── cli.ts
 │   intel-eval ────────────►│
 └── .claude-plugin/         └── data/
     plugin.json                 ├── metrics.db
@@ -117,8 +116,7 @@ The plugin is a thin shell — hooks and skills invoke `bun run` against the CLI
 ## Running Tests
 
 ```sh
-cd ~/.claude/kraftwork-intel
-bun test
+cd kraftwork-intel && bun test
 ```
 
-49 tests across metrics, knowledge, hooks, and eval modules.
+25 tests across metrics, knowledge, hooks, and eval modules.
