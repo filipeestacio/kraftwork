@@ -15,6 +15,8 @@ export function openDb(): Database {
   mkdirSync(dir, { recursive: true });
   const db = new Database(join(dir, "metrics.db"));
   db.exec(`
+    PRAGMA foreign_keys = ON;
+    PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
       started_at INTEGER NOT NULL,
@@ -22,14 +24,14 @@ export function openDb(): Database {
     );
     CREATE TABLE IF NOT EXISTS interactions (
       id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
+      session_id TEXT NOT NULL REFERENCES sessions(id),
       role TEXT NOT NULL,
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL
     );
     CREATE TABLE IF NOT EXISTS skill_uses (
       id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
+      session_id TEXT NOT NULL REFERENCES sessions(id),
       skill_name TEXT NOT NULL,
       invoked_at INTEGER NOT NULL
     );
