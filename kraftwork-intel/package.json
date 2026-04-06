@@ -1,0 +1,12 @@
+{
+  "name": "kraftwork-intel-cli",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@lancedb/lancedb": "^0.14.0",
+    "@huggingface/transformers": "^3.3.0"
+  }
+}
