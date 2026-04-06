@@ -25,11 +25,14 @@ claude plugin install kraftwork-gitlab@kraftwork-marketplace   # GitLab CI/CD + 
 claude plugin install kraftwork-github@kraftwork-marketplace   # GitHub pull requests
 claude plugin install kraftwork-jira@kraftwork-marketplace     # Jira ticket management
 claude plugin install kraftwork-clickup@kraftwork-marketplace  # ClickUp tickets + docs
+claude plugin install kraftwork-slack@kraftwork-marketplace    # Slack messaging
 claude plugin install kraftwork-intel@kraftwork-marketplace    # Local knowledge base + metrics
 claude plugin install kraftwork-argocd@kraftwork-marketplace   # ArgoCD deployment health
 claude plugin install kraftwork-review@kraftwork-marketplace   # Independent code review
 claude plugin install kraftwork-zellij@kraftwork-marketplace   # Zellij terminal multiplexer
 ```
+
+After installing new plugins, re-run `/kraft-config` to register them in your workspace — it's idempotent and only adds what's new.
 
 ### Let Claude Code install it for you
 
@@ -49,6 +52,7 @@ Install the Kraftwork plugin marketplace and plugins for this workspace.
    - kraftwork-gitlab — GitLab CI/CD and merge requests
    - kraftwork-jira — Jira ticket management
    - kraftwork-clickup — ClickUp tickets and document storage
+   - kraftwork-slack — Slack messaging
    - kraftwork-intel — local knowledge base, metrics, and evals
    - kraftwork-argocd — ArgoCD deployment health
    - kraftwork-review — independent code review perspectives
@@ -89,6 +93,7 @@ kraftwork-github/       GitHub git hosting provider
 kraftwork-gitlab/       GitLab CI/CD and merge request provider
 kraftwork-jira/         Jira ticket management provider
 kraftwork-clickup/      ClickUp ticket management and document storage provider
+kraftwork-slack/        Slack messaging provider
 kraftwork-intel/        Local intelligence — metrics, knowledge, evals (memory provider)
 kraftwork-argocd/       ArgoCD deployment health and debugging
 kraftwork-review/       Independent code review perspectives
@@ -130,7 +135,7 @@ Six interface categories exist:
 | **ticket-management** | Ticket search, creation, status | kraftwork-jira, kraftwork-clickup, local fallback |
 | **document-storage** | Document read/write | kraftwork-clickup, local fallback |
 | **memory** | Knowledge storage and retrieval | kraftwork-intel, local fallback |
-| **messaging** | Notifications and chat | kraftwork-clickup |
+| **messaging** | Notifications and chat | kraftwork-slack, kraftwork-clickup |
 
 `/kraft-config` discovers installed providers and lets you choose one per category. Categories without an installed provider fall back to local implementations (markdown files, filesystem, grep) — except git-hosting and messaging, which are simply skipped.
 
@@ -200,18 +205,31 @@ ClickUp provider. Implements `ticket-management`, `document-storage`, and `messa
 
 Requires: `CLICKUP_TOKEN` environment variable
 
+### kraftwork-slack
+
+Slack messaging provider. Implements the `messaging` interface.
+
+| Skill | Purpose |
+|-------|---------|
+| `messaging-find` | Search Slack channels by name or purpose |
+| `messaging-describe` | Read messages from a channel or thread |
+
+Requires: Slack MCP server configured in Claude Code
+
 ### kraftwork-intel
 
 Local-first intelligence layer. Implements the `memory` interface.
 
 | Skill | Purpose |
 |-------|---------|
-| `/intel-report` | View skill usage metrics and session statistics |
-| `/intel-store` | Store codebase learnings (architecture, patterns, debugging) |
-| `/intel-query` | Semantic search across stored knowledge |
-| `/intel-eval` | Run quality evaluations against skills |
+| `memory-memorize` | Store codebase learnings (architecture, patterns, debugging) |
+| `memory-recall` | Semantic search across stored knowledge |
+| `intel-report` | View skill usage metrics and session statistics |
+| `intel-eval` | Run quality evaluations against skills |
 
 Data stays local: SQLite for metrics, LanceDB with local embeddings for knowledge search.
+
+Requires: [Bun](https://bun.sh) >= 1.3 — installed automatically by `/kraft-config`
 
 Optional: [Ollama](https://ollama.com/) with `llama3.2:3b` for LLM-based evals.
 
@@ -249,6 +267,7 @@ Requires: [Zellij](https://zellij.dev)
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- [superpowers](https://github.com/helicone/superpowers) plugin — required for planning, TDD, and debugging workflows
 - [Bun](https://bun.sh) >= 1.3
 - Git with worktree support
 - `jq` for JSON parsing
