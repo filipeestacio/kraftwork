@@ -89,8 +89,7 @@ switch (command) {
       case "post-tool":     handlePostTool(event);      break;
       case "stop":          handleStop(event);           break;
       default:
-        console.error(`Unknown hook type: ${hookType}`);
-        process.exit(1);
+        console.error(`Unknown hook type: ${hookType} (ignored)`);
     }
     process.exit(0);
     break;
