@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun run ${CLAUDE_PLUGIN_ROOT}/src/cli.ts hook session-start"
+            "command": "cd \"${CLAUDE_PLUGIN_ROOT}\"; test -d node_modules || bun install --silent 2>/dev/null; bun run src/cli.ts hook session-start"
           }
         ]
       }

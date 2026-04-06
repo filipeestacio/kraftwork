@@ -84,7 +84,7 @@ switch (command) {
     const raw = await Bun.stdin.text();
     const event = JSON.parse(raw);
     switch (hookType) {
-      case "session-start": handleSessionStart(event); break;
+      case "session-start": handleSessionStart(event, Bun.main); break;
       case "user-prompt":   handleUserPrompt(event);   break;
       case "post-tool":     handlePostTool(event);      break;
       case "stop":          handleStop(event);           break;

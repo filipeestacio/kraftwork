@@ -21,7 +21,7 @@ afterEach(() => {
 
 describe("handleSessionStart", () => {
   it("inserts a session row", () => {
-    handleSessionStart({ session_id: "s1", cwd: "/proj" });
+    handleSessionStart({ session_id: "s1", cwd: "/proj" }, "");
     const db = openDb();
     const row = db.query("SELECT * FROM sessions WHERE id = 's1'").get() as { id: string } | null;
     db.close();
@@ -29,14 +29,14 @@ describe("handleSessionStart", () => {
   });
 
   it("is idempotent (INSERT OR IGNORE)", () => {
-    handleSessionStart({ session_id: "s1", cwd: "/proj" });
-    expect(() => handleSessionStart({ session_id: "s1", cwd: "/proj" })).not.toThrow();
+    handleSessionStart({ session_id: "s1", cwd: "/proj" }, "");
+    expect(() => handleSessionStart({ session_id: "s1", cwd: "/proj" }, "")).not.toThrow();
   });
 });
 
 describe("handleUserPrompt", () => {
   it("inserts a user interaction row", () => {
-    handleSessionStart({ session_id: "s1", cwd: "/proj" });
+    handleSessionStart({ session_id: "s1", cwd: "/proj" }, "");
     handleUserPrompt({ session_id: "s1", prompt: "Hello world" });
     const db = openDb();
     const row = db.query("SELECT * FROM interactions WHERE session_id = 's1' AND role = 'user'")
@@ -48,7 +48,7 @@ describe("handleUserPrompt", () => {
 
 describe("handlePostTool", () => {
   it("inserts a skill_use row", () => {
-    handleSessionStart({ session_id: "s1", cwd: "/proj" });
+    handleSessionStart({ session_id: "s1", cwd: "/proj" }, "");
     handlePostTool({ session_id: "s1", tool_name: "Skill", tool_input: { skill: "brainstorming" } });
     const db = openDb();
     const row = db.query("SELECT * FROM skill_uses WHERE session_id = 's1'")
@@ -58,7 +58,7 @@ describe("handlePostTool", () => {
   });
 
   it("falls back to tool_name when skill field absent", () => {
-    handleSessionStart({ session_id: "s1", cwd: "/proj" });
+    handleSessionStart({ session_id: "s1", cwd: "/proj" }, "");
     handlePostTool({ session_id: "s1", tool_name: "Skill", tool_input: {} });
     const db = openDb();
     const row = db.query("SELECT * FROM skill_uses WHERE session_id = 's1'")
@@ -70,7 +70,7 @@ describe("handlePostTool", () => {
 
 describe("handleStop", () => {
   it("inserts an assistant interaction row", () => {
-    handleSessionStart({ session_id: "s1", cwd: "/proj" });
+    handleSessionStart({ session_id: "s1", cwd: "/proj" }, "");
     handleStop({ session_id: "s1", response: "Here is my answer." });
     const db = openDb();
     const row = db.query("SELECT * FROM interactions WHERE session_id = 's1' AND role = 'assistant'")
@@ -80,7 +80,7 @@ describe("handleStop", () => {
   });
 
   it("stores empty string gracefully when response absent", () => {
-    handleSessionStart({ session_id: "s1", cwd: "/proj" });
+    handleSessionStart({ session_id: "s1", cwd: "/proj" }, "");
     handleStop({ session_id: "s1", response: "" });
     const db = openDb();
     const row = db.query("SELECT * FROM interactions WHERE role = 'assistant'")
