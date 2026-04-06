@@ -17,7 +17,7 @@
         "path": "kraftwork"
       },
       "description": "Opinionated developer workflow orchestration with skill-based provider interfaces for git hosting, CI, ticket management, document storage, memory, and messaging",
-      "version": "4.3.0"
+      "version": "4.4.0"
     },
     {
       "name": "kraftwork-github",

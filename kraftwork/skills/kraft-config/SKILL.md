@@ -245,6 +245,14 @@ If `$WORKSPACE/CLAUDE.md` does not already exist, generate it with:
 
 All values must come from workspace.json. Do not hardcode any company name, URLs, or repository names.
 
+After the base content, append behavioral guidance from each configured provider. For each provider plugin in workspace.json, check for a `config/claude-md-fragment.md` at:
+
+```sh
+FRAGMENT="$CACHE_DIR/$MARKETPLACE/$PLUGIN_NAME/$VERSION_DIR/config/claude-md-fragment.md"
+```
+
+If the file exists, append its contents to CLAUDE.md. This gives each provider the opportunity to instruct Claude on when and how to use its skills within this workspace.
+
 ## Phase 6.5 — Plugin-Specific Setup
 
 ### Step 11: Set Up kraftwork-intel CLI
