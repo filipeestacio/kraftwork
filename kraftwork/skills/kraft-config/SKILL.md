@@ -249,13 +249,13 @@ All values must come from workspace.json. Do not hardcode any company name, URLs
 
 ### Step 11: Set Up kraftwork-intel CLI
 
-This step runs only when `kraftwork-intel` is the selected memory provider.
+This step runs whenever `kraftwork-intel` is installed, regardless of whether it is the selected memory provider.
 
 ```sh
-MEMORY_PROVIDER=$(jq -r '.providers.memory // empty' workspace.json)
+INTEL_INSTALLED=$(echo "$ENABLED_PLUGINS" | grep -c "^kraftwork-intel@" || true)
 ```
 
-If `MEMORY_PROVIDER` equals `kraftwork-intel`:
+If `INTEL_INSTALLED` is greater than 0:
 
 1. **Locate the installed plugin path:**
 
