@@ -3,6 +3,10 @@ import { join } from "path";
 import { dataDir } from "../metrics/db";
 import { embed as defaultEmbed } from "./embed";
 
+function escapeSql(val: string): string {
+  return val.replace(/'/g, "''");
+}
+
 export interface QueryResult {
   id: string;
   content: string;
@@ -28,8 +32,8 @@ export async function query(
 
   // superseded_by uses empty string "" as the sentinel for "not superseded"
   const conditions = ["superseded_by = ''"];
-  if (opts.category) conditions.push(`category = '${opts.category}'`);
-  if (opts.project) conditions.push(`project = '${opts.project}'`);
+  if (opts.category) conditions.push(`category = '${escapeSql(opts.category)}'`);
+  if (opts.project) conditions.push(`project = '${escapeSql(opts.project)}'`);
 
   const results = await tbl
     .vectorSearch(vector)

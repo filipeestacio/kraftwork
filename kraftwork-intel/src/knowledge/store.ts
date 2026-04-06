@@ -5,6 +5,10 @@ import { randomUUID } from "crypto";
 import { dataDir } from "../metrics/db";
 import { embed as defaultEmbed } from "./embed";
 
+function escapeSql(val: string): string {
+  return val.replace(/'/g, "''");
+}
+
 export interface KnowledgeRecord {
   id: string;
   content: string;
@@ -47,7 +51,7 @@ export async function store(
     if (opts.supersedes) {
       await tbl.update({
         values: { superseded_by: id },
-        where: `id = '${opts.supersedes}'`,
+        where: `id = '${escapeSql(opts.supersedes)}'`,
       });
     }
   } else {
@@ -55,7 +59,7 @@ export async function store(
     if (opts.supersedes) {
       await tbl.update({
         values: { superseded_by: id },
-        where: `id = '${opts.supersedes}'`,
+        where: `id = '${escapeSql(opts.supersedes)}'`,
       });
     }
   }
