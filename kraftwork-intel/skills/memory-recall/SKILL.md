@@ -10,18 +10,18 @@ Search the kraftwork knowledge base for relevant learnings.
 ## Prerequisites
 
 - `bun` installed
-- `~/.claude/kraftwork-intel/` initialized
+- `kraftwork-intel` plugin installed and configured via `/kraft-config`
 
 ## Workflow
 
 ### Step 1: Run the search
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts query "<search terms>"
+    ~/.claude/kraftwork-intel/cli query "<search terms>"
 
 Optional filters:
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts query "<search terms>" --category architecture
-    bun run ~/.claude/kraftwork-intel/src/cli.ts query "<search terms>" --project api
+    ~/.claude/kraftwork-intel/cli query "<search terms>" --category architecture
+    ~/.claude/kraftwork-intel/cli query "<search terms>" --project api
 
 ### Step 2: Present results
 

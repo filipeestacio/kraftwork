@@ -10,7 +10,7 @@ Show usage metrics from the kraftwork intelligence layer.
 ## Prerequisites
 
 - `bun` installed
-- `~/.claude/kraftwork-intel/` initialized (run `bun install` in that directory if needed)
+- `kraftwork-intel` plugin installed and configured via `/kraft-config`
 
 ## Workflow
 
@@ -25,15 +25,15 @@ Options:
 
 For general overview:
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts report
+    ~/.claude/kraftwork-intel/cli report
 
 For a specific skill:
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts report --skill "<skill-name>"
+    ~/.claude/kraftwork-intel/cli report --skill "<skill-name>"
 
 For time-filtered:
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts report --days <N>
+    ~/.claude/kraftwork-intel/cli report --days <N>
 
 ### Step 3: Present results
 

@@ -10,7 +10,7 @@ Run evaluations against skills to measure quality using real interaction data.
 ## Prerequisites
 
 - `bun` installed
-- `~/.claude/kraftwork-intel/` initialized
+- `kraftwork-intel` plugin installed and configured via `/kraft-config`
 - For LLM scoring: Ollama running with `llama3.2:3b` model
 
 ## Workflow
@@ -26,19 +26,19 @@ Options:
 
 For a single skill:
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts eval <skill-name>
+    ~/.claude/kraftwork-intel/cli eval <skill-name>
 
 For all skills:
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts eval --all
+    ~/.claude/kraftwork-intel/cli eval --all
 
 For flagged skills (low success rate):
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts eval --flagged
+    ~/.claude/kraftwork-intel/cli eval --flagged
 
 To include Ollama LLM scoring (slower but more nuanced):
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts eval <skill-name> --llm
+    ~/.claude/kraftwork-intel/cli eval <skill-name> --llm
 
 ### Step 3: Present results
 

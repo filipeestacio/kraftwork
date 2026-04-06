@@ -10,7 +10,7 @@ Save a codebase learning to the knowledge store for retrieval in future sessions
 ## Prerequisites
 
 - `bun` installed
-- `~/.claude/kraftwork-intel/` initialized
+- `kraftwork-intel` plugin installed and configured via `/kraft-config`
 
 ## Workflow
 
@@ -24,14 +24,14 @@ Determine:
 
 ### Step 2: Store the learning
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts store \
+    ~/.claude/kraftwork-intel/cli store \
       --category "<category>" \
       --project "<project>" \
       --content "<the learning>"
 
 If superseding a previous learning:
 
-    bun run ~/.claude/kraftwork-intel/src/cli.ts store \
+    ~/.claude/kraftwork-intel/cli store \
       --category "<category>" \
       --project "<project>" \
       --supersedes "<previous-learning-id>" \
