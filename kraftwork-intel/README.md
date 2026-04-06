@@ -11,8 +11,8 @@ Local intelligence layer for Kraftwork — metrics, knowledge, and evals.
   curl -fsSL https://bun.sh/install | bash
   ```
 
-- **kraftwork-intel CLI** — bundled with the plugin. Run `/kraft-config` after installing
-  the plugin to register it. No separate install needed.
+- **kraftwork-intel CLI** — bundled with the plugin. Registered automatically on the first
+  Claude Code session after install. No separate setup needed.
 
 ### Optional (for eval LLM scoring)
 
@@ -42,10 +42,10 @@ All data is stored locally at `~/.claude/kraftwork-intel/data/metrics.db` (SQLit
 
 | Skill | Purpose |
 |-------|---------|
-| `/intel-report` | Show skill usage metrics and session statistics |
+| `intel-report` | Show skill usage metrics and session statistics |
 | `memory-memorize` | Store a codebase learning (architecture, patterns, debugging insights) |
 | `memory-recall` | Search the knowledge base by semantic similarity |
-| `/intel-eval` | Run quality evaluations against skills using recorded interactions |
+| `intel-eval` | Run quality evaluations against skills using recorded interactions |
 
 ### Knowledge Store
 
@@ -70,7 +70,7 @@ All data lives outside any git repo:
 
 ## CLI Reference
 
-The CLI is registered at `~/.claude/kraftwork-intel/cli` by `/kraft-config`.
+The CLI is registered at `~/.claude/kraftwork-intel/cli` automatically on the first session start after install.
 
 ```sh
 # Dependency check
