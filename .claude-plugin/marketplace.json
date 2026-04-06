@@ -66,8 +66,8 @@
         "url": "https://github.com/filipeestacio/kraftwork.git",
         "path": "kraftwork-intel"
       },
-      "description": "Local intelligence layer for Kraftwork — implements memory interface with SQLite, LanceDB, and Obsidian backends (requires kraftwork core)",
-      "version": "3.0.0"
+      "description": "Local intelligence layer for Kraftwork — implements memory interface with SQLite metrics, LanceDB semantic search, and skill quality evals (requires kraftwork core)",
+      "version": "4.0.0"
     },
     {
       "name": "kraftwork-argocd",
