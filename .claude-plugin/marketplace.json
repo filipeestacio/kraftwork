@@ -110,6 +110,16 @@
       "version": "1.0.0"
     },
     {
+      "name": "kraftwork-growth",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/filipeestacio/kraftwork.git",
+        "path": "kraftwork-growth"
+      },
+      "description": "Growth tracking and weekly reflection for Kraftwork — scaffolds goals, gathers evidence from installed providers, writes Obsidian-compatible progress files",
+      "version": "1.0.0"
+    },
+    {
       "name": "presentation",
       "source": {
         "source": "url",
