@@ -107,7 +107,7 @@
         "path": "kraftwork-slack"
       },
       "description": "Slack messaging provider for Kraftwork — implements messaging interface (requires kraftwork core)",
-      "version": "1.0.0"
+      "version": "1.1.0"
     },
     {
       "name": "kraftwork-growth",
