@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, rmSync } from "fs";
+import { mkdirSync, readFileSync, rmSync } from "fs";
 import { join } from "path";
 import { openDb } from "../metrics/db";
-import { handleSessionStart } from "./session-start";
+import { bootstrapCli, handleSessionStart } from "./session-start";
 import { handleUserPrompt } from "./user-prompt";
 import { handlePostTool } from "./post-tool";
 import { handleStop } from "./stop";
@@ -87,5 +87,39 @@ describe("handleStop", () => {
       .get() as { content: string } | null;
     db.close();
     expect(row?.content).toBe("");
+  });
+});
+
+describe("bootstrapCli", () => {
+  const home = join(TEST_DIR, "home");
+  const wrapper = join(home, ".claude/kraftwork-intel/cli");
+  const cliPath = "/some/path/to/cli.ts";
+  let originalHome: string | undefined;
+
+  beforeEach(() => {
+    originalHome = process.env.HOME;
+    process.env.HOME = home;
+  });
+
+  afterEach(() => {
+    if (originalHome !== undefined) process.env.HOME = originalHome;
+    else delete process.env.HOME;
+  });
+
+  it("bakes CLAUDE_PLUGIN_DATA into the shim when set in the environment", () => {
+    process.env.CLAUDE_PLUGIN_DATA = "/data/path";
+    bootstrapCli(cliPath);
+    const contents = readFileSync(wrapper, "utf8");
+    expect(contents).toContain(': "${CLAUDE_PLUGIN_DATA:=/data/path}"');
+    expect(contents).toContain("export CLAUDE_PLUGIN_DATA");
+    expect(contents).toContain(`exec bun run "${cliPath}" "$@"`);
+  });
+
+  it("omits the data line when CLAUDE_PLUGIN_DATA is unset", () => {
+    delete process.env.CLAUDE_PLUGIN_DATA;
+    bootstrapCli(cliPath);
+    const contents = readFileSync(wrapper, "utf8");
+    expect(contents).not.toContain("CLAUDE_PLUGIN_DATA");
+    expect(contents).toContain(`exec bun run "${cliPath}" "$@"`);
   });
 });
