@@ -1,6 +1,6 @@
 {
   "name": "kraftwork-intel",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "Local intelligence layer — metrics, knowledge, and evals for Kraftwork workflows (requires kraftwork core)",
   "author": {
     "name": "Filipe Estacio",

@@ -67,7 +67,7 @@
         "path": "kraftwork-intel"
       },
       "description": "Local intelligence layer for Kraftwork — implements memory interface with SQLite metrics, LanceDB semantic search, and skill quality evals (requires kraftwork core)",
-      "version": "4.1.0"
+      "version": "4.1.1"
     },
     {
       "name": "kraftwork-argocd",
