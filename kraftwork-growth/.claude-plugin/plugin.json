@@ -1,6 +1,6 @@
 {
   "name": "kraftwork-growth",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Growth tracking and weekly reflection for Kraftwork — scaffolds goals, gathers evidence from installed providers, writes Obsidian-compatible progress files (requires kraftwork core)",
   "author": {
     "name": "Filipe Estacio",
